@@ -200,6 +200,7 @@ subprojects {
 
     val SERVER_MAIN_URL_PROD = "\"https://refresh.pocketcasts.com\""
     val SERVER_API_URL_PROD = "\"https://api.pocketcasts.com\""
+    val SERVER_API_URL_JUSSKIPIT = "\"https://api.jusskipit.com/v1\""
     val SERVER_CACHE_URL_PROD = "\"https://cache.pocketcasts.com\""
     val SERVER_CACHE_HOST_PROD = "\"cache.pocketcasts.com\""
     val SERVER_STATIC_URL_PROD = "\"https://static.pocketcasts.com\""
@@ -284,6 +285,7 @@ subprojects {
 
                     buildConfigField("String", "SERVER_MAIN_URL", "\"https://refresh.pocketcasts.net\"")
                     buildConfigField("String", "SERVER_API_URL", "\"https://api.pocketcasts.net\"")
+                    buildConfigField("String", "SERVER_API_URL_JUSSKIPIT", "\"https://api.jusskipit.com/v1\"")
                     buildConfigField("String", "SERVER_CACHE_URL", "\"https://podcast-api.pocketcasts.net\"")
                     buildConfigField("String", "SERVER_CACHE_HOST", "\"podcast-api.pocketcasts.net\"")
                     buildConfigField("String", "SERVER_STATIC_URL", "\"https://static.pocketcasts.net\"")
@@ -306,6 +308,7 @@ subprojects {
 
                     buildConfigField("String", "SERVER_MAIN_URL", SERVER_MAIN_URL_PROD)
                     buildConfigField("String", "SERVER_API_URL", SERVER_API_URL_PROD)
+                    buildConfigField("String", "SERVER_API_URL_JUSSKIPIT", SERVER_API_URL_JUSSKIPIT)
                     buildConfigField("String", "SERVER_CACHE_URL", SERVER_CACHE_URL_PROD)
                     buildConfigField("String", "SERVER_CACHE_HOST", SERVER_CACHE_HOST_PROD)
                     buildConfigField("String", "SERVER_STATIC_URL", SERVER_STATIC_URL_PROD)
@@ -323,6 +326,7 @@ subprojects {
 
                     buildConfigField("String", "SERVER_MAIN_URL", SERVER_MAIN_URL_PROD)
                     buildConfigField("String", "SERVER_API_URL", SERVER_API_URL_PROD)
+                    buildConfigField("String", "SERVER_API_URL_JUSSKIPIT", SERVER_API_URL_JUSSKIPIT)
                     buildConfigField("String", "SERVER_CACHE_URL", SERVER_CACHE_URL_PROD)
                     buildConfigField("String", "SERVER_CACHE_HOST", SERVER_CACHE_HOST_PROD)
                     buildConfigField("String", "SERVER_STATIC_URL", SERVER_STATIC_URL_PROD)
