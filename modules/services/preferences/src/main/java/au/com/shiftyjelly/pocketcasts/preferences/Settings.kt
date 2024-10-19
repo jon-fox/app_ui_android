@@ -41,6 +41,7 @@ interface Settings {
     companion object {
         const val SERVER_MAIN_URL = BuildConfig.SERVER_MAIN_URL
         const val SERVER_API_URL = BuildConfig.SERVER_API_URL
+        const val SERVER_API_URL_JUSSKIPIT = BuildConfig.SERVER_API_URL_JUSSKIPIT
         const val SERVER_CACHE_URL = BuildConfig.SERVER_CACHE_URL
         const val SERVER_STATIC_URL = BuildConfig.SERVER_STATIC_URL
         const val SERVER_SHARING_URL = BuildConfig.SERVER_SHARING_URL

@@ -249,6 +249,9 @@ open class SyncServiceManager @Inject constructor(
     fun getPlaybackUrl(episode: UserEpisode, token: AccessToken): Single<String> =
         Single.just("${Settings.SERVER_API_URL}/files/url/${episode.uuid}?token=${token.value}")
 
+    fun getJusSkipItPlaybackUrl(episode: UserEpisode, token: AccessToken): Single<String> =
+        Single.just("${Settings.SERVER_API_URL_JUSSKIPIT}/files/url/${episode.uuid}?token=${token.value}")
+
     fun getUserEpisode(uuid: String, token: AccessToken): Single<Response<ServerFile>> =
         service.getFile(addBearer(token), uuid)
 

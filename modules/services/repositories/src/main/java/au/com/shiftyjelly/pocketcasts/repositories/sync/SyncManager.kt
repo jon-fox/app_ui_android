@@ -71,6 +71,7 @@ interface SyncManager : NamedSettingsCaller {
     fun deleteImageFromServer(episode: UserEpisode): Single<Response<Void>>
     fun deleteFromServer(episode: UserEpisode): Single<Response<Void>>
     fun getPlaybackUrl(episode: UserEpisode): Single<String>
+    fun getJusskipitPlaybackUrl(episode: UserEpisode): Single<String>
 
     // History
     fun historySync(request: HistorySyncRequest): Single<HistorySyncResponse>

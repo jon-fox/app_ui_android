@@ -303,6 +303,11 @@ class SyncManagerImpl @Inject constructor(
             syncServiceManager.getPlaybackUrl(episode, token)
         }
 
+    override fun getJuskipitPlaybackUrl(episode: UserEpisode): Single<String> =
+        getCacheTokenOrLoginRxSingle { token ->
+            syncServiceManager.getJusSkipItPlaybackUrl(episode, token)
+        }
+
     override fun getUserEpisode(uuid: String): Maybe<ServerFile> =
         getCacheTokenOrLoginRxSingle { token ->
             syncServiceManager.getUserEpisode(uuid, token)
