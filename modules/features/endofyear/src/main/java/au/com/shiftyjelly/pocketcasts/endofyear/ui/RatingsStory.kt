@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -20,9 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,12 +34,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -61,6 +58,7 @@ import au.com.shiftyjelly.pocketcasts.models.to.Rating
 import au.com.shiftyjelly.pocketcasts.models.to.RatingStats
 import kotlin.math.roundToLong
 import kotlinx.coroutines.delay
+import au.com.shiftyjelly.pocketcasts.images.R as IR
 import au.com.shiftyjelly.pocketcasts.localization.R as LR
 import au.com.shiftyjelly.pocketcasts.ui.R as UR
 
@@ -68,19 +66,26 @@ import au.com.shiftyjelly.pocketcasts.ui.R as UR
 internal fun RatingsStory(
     story: Story.Ratings,
     measurements: EndOfYearMeasurements,
-) = RatingsStory(story, measurements, showBars = false)
+    onLearnAboutRatings: () -> Unit,
+) = RatingsStory(
+    story = story,
+    measurements = measurements,
+    showBars = false,
+    onLearnAboutRatings = onLearnAboutRatings,
+)
 
 @Composable
 private fun RatingsStory(
     story: Story.Ratings,
     measurements: EndOfYearMeasurements,
     showBars: Boolean,
+    onLearnAboutRatings: () -> Unit,
 ) {
     val maxRatingCount = story.stats.max().second
     if (maxRatingCount != 0) {
         PresentRatings(story, measurements, showBars)
     } else {
-        AbsentRatings(story, measurements)
+        AbsentRatings(story, measurements, onLearnAboutRatings)
     }
 }
 
@@ -116,7 +121,8 @@ private fun PresentRatings(
             )
             TextH10(
                 text = stringResource(LR.string.eoy_story_ratings_title_1),
-                disableScale = true,
+                fontScale = measurements.smallDeviceFactor,
+                disableAutoScale = true,
                 color = colorResource(UR.color.coolgrey_90),
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
@@ -129,7 +135,7 @@ private fun PresentRatings(
                     Rating.Four, Rating.Five -> stringResource(LR.string.eoy_story_ratings_subtitle_1, rating.numericalValue)
                 },
                 fontSize = 15.sp,
-                disableScale = true,
+                disableAutoScale = true,
                 color = colorResource(UR.color.coolgrey_90),
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
@@ -253,7 +259,7 @@ private fun RowScope.RatingBar(
     ) {
         TextH20(
             text = "$rating",
-            disableScale = true,
+            disableAutoScale = true,
             color = colorResource(UR.color.coolgrey_90),
             modifier = Modifier
                 .offset { textOffset }
@@ -277,65 +283,49 @@ private fun RowScope.RatingBar(
 private fun AbsentRatings(
     story: Story.Ratings,
     measurements: EndOfYearMeasurements,
+    onLearnAboutRatings: () -> Unit,
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(story.backgroundColor)
             .padding(top = measurements.closeButtonBottomEdge),
     ) {
-        SubcomposeLayout { constraints ->
-            val noRatingsInfo = subcompose("noRatingsInfo") {
-                NoRatingsInfo(
-                    story = story,
-                )
-            }[0].measure(constraints)
-            val oopsiesSection = subcompose("oopsiesSection") {
-                OopsiesSection(
-                    measurements = measurements,
-                )
-            }[0].measure(constraints)
-
-            val emptySpaceHeight = constraints.maxHeight - noRatingsInfo.height
-            val oopsiesPosition = (emptySpaceHeight - oopsiesSection.height).coerceAtLeast(0) / 2
-
-            layout(constraints.maxWidth, constraints.maxHeight) {
-                oopsiesSection.place(0, oopsiesPosition)
-                noRatingsInfo.place(0, emptySpaceHeight)
-            }
-        }
+        OopsiesSection(
+            measurements = measurements,
+        )
+        NoRatingsInfo(
+            story = story,
+            measurements = measurements,
+            onLearnAboutRatings = onLearnAboutRatings,
+        )
     }
 }
 
 @Composable
-private fun OopsiesSection(
+private fun ColumnScope.OopsiesSection(
     measurements: EndOfYearMeasurements,
 ) {
-    // Measure text to postion things better
-    val textMeasurer = rememberTextMeasurer()
-    val fontSize = 227.nonScaledSp
-    val textMeasurement = remember {
-        textMeasurer.measure(
-            text = "OOOOPSIES",
-            style = TextStyle(
-                fontFamily = humaneFontFamily,
-                fontSize = fontSize,
-            ),
-        )
-    }
+    val textFactory = rememberHumaneTextFactory(
+        fontSize = 227.nonScaledSp * measurements.smallDeviceFactor,
+    )
 
     Column(
+        verticalArrangement = Arrangement.Center,
         modifier = Modifier
-            .offset(x = measurements.width / 2)
-            .requiredWidth(measurements.width * 2),
+            .weight(1f)
+            .requiredWidth(measurements.width * 1.5f),
     ) {
         OopsiesText(
             scrollDirection = ScrollDirection.Left,
-            textMeasurement = textMeasurement,
+            textFactory = textFactory,
+        )
+        Spacer(
+            modifier = Modifier.height(12.dp * measurements.smallDeviceFactor),
         )
         OopsiesText(
             scrollDirection = ScrollDirection.Right,
-            textMeasurement = textMeasurement,
+            textFactory = textFactory,
         )
     }
 }
@@ -343,26 +333,22 @@ private fun OopsiesSection(
 @Composable
 private fun OopsiesText(
     scrollDirection: ScrollDirection,
-    textMeasurement: TextLayoutResult,
+    textFactory: HumaneTextFactory,
 ) {
-    val textHeight = LocalDensity.current.run { textMeasurement.firstBaseline.toDp() } + 12.dp
     ScrollingRow(
         scrollDelay = { (20 / it.density).roundToLong().coerceAtLeast(4L) },
         items = listOf("OOOOPSIES"),
         scrollDirection = scrollDirection,
-    ) {
+    ) { text ->
         Row(
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "OOOOPSIES",
-                fontFamily = humaneFontFamily,
-                fontSize = 227.nonScaledSp,
-                maxLines = 1,
-                modifier = Modifier.requiredHeight(textHeight),
+            textFactory.HumaneText(text)
+            Spacer(
+                modifier = Modifier.height(12.dp),
             )
             Image(
-                painter = painterResource(au.com.shiftyjelly.pocketcasts.images.R.drawable.eoy_star_text_stop),
+                painter = painterResource(IR.drawable.eoy_star_text_stop),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(colorResource(UR.color.coolgrey_90)),
                 modifier = Modifier.padding(horizontal = 8.dp),
@@ -374,6 +360,8 @@ private fun OopsiesText(
 @Composable
 private fun NoRatingsInfo(
     story: Story.Ratings,
+    measurements: EndOfYearMeasurements,
+    onLearnAboutRatings: () -> Unit,
 ) {
     Column(
         modifier = Modifier.background(
@@ -388,7 +376,8 @@ private fun NoRatingsInfo(
         )
         TextH10(
             text = stringResource(LR.string.eoy_story_ratings_title_2),
-            disableScale = true,
+            fontScale = measurements.smallDeviceFactor,
+            disableAutoScale = true,
             color = colorResource(UR.color.coolgrey_90),
             modifier = Modifier.padding(horizontal = 24.dp),
         )
@@ -398,13 +387,13 @@ private fun NoRatingsInfo(
         TextP40(
             text = stringResource(LR.string.eoy_story_ratings_subtitle_3),
             fontSize = 15.sp,
-            disableScale = true,
+            disableAutoScale = true,
             color = colorResource(UR.color.coolgrey_90),
             modifier = Modifier.padding(horizontal = 24.dp),
         )
         OutlinedEoyButton(
             text = stringResource(LR.string.eoy_story_ratings_learn_button_label),
-            onClick = {},
+            onClick = onLearnAboutRatings,
         )
     }
 }
@@ -412,7 +401,7 @@ private fun NoRatingsInfo(
 @Preview(device = Devices.PortraitRegular)
 @Composable
 private fun RatingsHighPreview() {
-    PreviewBox { measurements ->
+    PreviewBox(currentPage = 4) { measurements ->
         RatingsStory(
             story = Story.Ratings(
                 stats = RatingStats(
@@ -425,6 +414,7 @@ private fun RatingsHighPreview() {
             ),
             measurements = measurements,
             showBars = true,
+            onLearnAboutRatings = {},
         )
     }
 }
@@ -432,7 +422,7 @@ private fun RatingsHighPreview() {
 @Preview(device = Devices.PortraitRegular)
 @Composable
 private fun RatingsLowPreview() {
-    PreviewBox { measurements ->
+    PreviewBox(currentPage = 4) { measurements ->
         RatingsStory(
             story = Story.Ratings(
                 stats = RatingStats(
@@ -445,6 +435,7 @@ private fun RatingsLowPreview() {
             ),
             measurements = measurements,
             showBars = true,
+            onLearnAboutRatings = {},
         )
     }
 }
@@ -452,7 +443,7 @@ private fun RatingsLowPreview() {
 @Preview(device = Devices.PortraitRegular)
 @Composable
 private fun RatingsNonePreview() {
-    PreviewBox { measurements ->
+    PreviewBox(currentPage = 4) { measurements ->
         RatingsStory(
             story = Story.Ratings(
                 stats = RatingStats(
@@ -465,6 +456,7 @@ private fun RatingsNonePreview() {
             ),
             measurements = measurements,
             showBars = true,
+            onLearnAboutRatings = {},
         )
     }
 }

@@ -125,7 +125,15 @@ enum class Feature(
     ),
     AUTO_DOWNLOAD(
         key = "auto_download",
-        title = "Auto download episodes",
+        title = "Auto download episodes after subscribing to a podcast",
+        defaultValue = BuildConfig.DEBUG,
+        tier = FeatureTier.Free,
+        hasFirebaseRemoteFlag = true,
+        hasDevToggle = true,
+    ),
+    UP_NEXT_SHUFFLE(
+        key = "up_next_shuffle",
+        title = "Up Next Shuffle",
         defaultValue = BuildConfig.DEBUG,
         tier = FeatureTier.Free,
         hasFirebaseRemoteFlag = false,

@@ -10,18 +10,21 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,18 +40,22 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import au.com.shiftyjelly.pocketcasts.compose.components.PagerProgressingIndicator
 import au.com.shiftyjelly.pocketcasts.compose.components.TextH10
-import au.com.shiftyjelly.pocketcasts.compose.components.TextP50
 import au.com.shiftyjelly.pocketcasts.endofyear.Story
 import au.com.shiftyjelly.pocketcasts.endofyear.UiState
 import au.com.shiftyjelly.pocketcasts.utils.Util
-import kotlinx.coroutines.launch
 import au.com.shiftyjelly.pocketcasts.images.R as IR
 import au.com.shiftyjelly.pocketcasts.localization.R as LR
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun StoriesPage(
     state: UiState,
+    pagerState: PagerState,
+    onChangeStory: (Boolean) -> Unit,
+    onLearnAboutRatings: () -> Unit,
+    onClickUpsell: () -> Unit,
     onClose: () -> Unit,
 ) {
     val size = LocalContext.current.sizeLimit?.let(Modifier::size) ?: Modifier.fillMaxSize()
@@ -76,10 +83,14 @@ internal fun StoriesPage(
                     coverFontSize = coverFontSize,
                     coverTextHeight = coverTextHeight,
                 ),
+                pagerState = pagerState,
+                onChangeStory = onChangeStory,
+                onLearnAboutRatings = onLearnAboutRatings,
+                onClickUpsell = onClickUpsell,
             )
         }
 
-        CloseButton(onClose)
+        TopControls(pagerState, state.storyProgress, onClose)
 
         // Use an invisible 'PLAYBACK' text to compute an appropriate font size.
         // The font should occupy the whole viewport's width with some padding.
@@ -112,9 +123,11 @@ internal fun StoriesPage(
 private fun Stories(
     stories: List<Story>,
     measurements: EndOfYearMeasurements,
+    pagerState: PagerState,
+    onChangeStory: (Boolean) -> Unit,
+    onLearnAboutRatings: () -> Unit,
+    onClickUpsell: () -> Unit,
 ) {
-    val pagerState = rememberPagerState(pageCount = { stories.size })
-    val coroutineScope = rememberCoroutineScope()
     val widthPx = LocalDensity.current.run { measurements.width.toPx() }
 
     HorizontalPager(
@@ -122,16 +135,8 @@ private fun Stories(
         userScrollEnabled = false,
         modifier = Modifier.pointerInput(Unit) {
             detectTapGestures { offset ->
-                if (!pagerState.isScrollInProgress) {
-                    coroutineScope.launch {
-                        val nextPage = if (offset.x > widthPx / 2) {
-                            pagerState.currentPage + 1
-                        } else {
-                            pagerState.currentPage - 1
-                        }
-                        pagerState.scrollToPage(nextPage)
-                    }
-                }
+                val moveForward = offset.x > widthPx / 2
+                onChangeStory(moveForward)
             }
         },
     ) { index ->
@@ -140,37 +145,54 @@ private fun Stories(
             is Story.NumberOfShows -> NumberOfShowsStory(story, measurements)
             is Story.TopShow -> TopShowStory(story, measurements)
             is Story.TopShows -> TopShowsStory(story, measurements)
-            is Story.Ratings -> RatingsStory(story, measurements)
+            is Story.Ratings -> RatingsStory(story, measurements, onLearnAboutRatings)
             is Story.TotalTime -> TotalTimeStory(story, measurements)
             is Story.LongestEpisode -> LongestEpisodeStory(story, measurements)
-            is Story.PlusInterstitial -> StoryPlaceholder(story)
-            is Story.YearVsYear -> StoryPlaceholder(story)
-            is Story.CompletionRate -> StoryPlaceholder(story)
-            is Story.Ending -> StoryPlaceholder(story)
+            is Story.PlusInterstitial -> PlusInterstitialStory(story, measurements, onClickUpsell)
+            is Story.YearVsYear -> YearVsYearStory(story, measurements)
+            is Story.CompletionRate -> CompletionRateStory(story, measurements)
+            is Story.Ending -> EndingStory(story, measurements)
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun BoxScope.CloseButton(
+internal fun BoxScope.TopControls(
+    pagerState: PagerState,
+    progress: Float,
     onClose: () -> Unit,
 ) {
-    Image(
-        painter = painterResource(IR.drawable.ic_close),
-        contentDescription = stringResource(LR.string.close),
-        colorFilter = ColorFilter.tint(Color.Black),
+    Column(
+        horizontalAlignment = Alignment.End,
         modifier = Modifier
-            .align(Alignment.TopEnd)
-            .padding(top = 20.dp, end = 18.dp)
-            .size(24.dp)
-            .clickable(
-                interactionSource = remember(::MutableInteractionSource),
-                indication = rememberRipple(color = Color.Black, bounded = false),
-                onClickLabel = stringResource(LR.string.close),
-                role = Role.Button,
-                onClick = onClose,
-            ),
-    )
+            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+            .padding(top = 8.dp, start = 16.dp, end = 16.dp),
+    ) {
+        PagerProgressingIndicator(
+            state = pagerState,
+            progress = progress,
+            activeColor = Color.Black,
+        )
+        Spacer(
+            modifier = Modifier.height(10.dp),
+        )
+        Image(
+            painter = painterResource(IR.drawable.ic_close),
+            contentDescription = stringResource(LR.string.close),
+            colorFilter = ColorFilter.tint(Color.Black),
+            modifier = Modifier
+                .size(24.dp)
+                .clickable(
+                    interactionSource = remember(::MutableInteractionSource),
+                    indication = rememberRipple(color = Color.Black, bounded = false),
+                    onClickLabel = stringResource(LR.string.close),
+                    role = Role.Button,
+                    onClick = onClose,
+                ),
+        )
+    }
 }
 
 @Composable
@@ -196,18 +218,6 @@ private fun ErrorMessage() {
             .padding(16.dp),
     ) {
         TextH10(text = "Whoops!")
-    }
-}
-
-@Composable
-private fun StoryPlaceholder(story: Story) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(story.backgroundColor),
-    ) {
-        TextP50("$story", color = Color.Black)
     }
 }
 
