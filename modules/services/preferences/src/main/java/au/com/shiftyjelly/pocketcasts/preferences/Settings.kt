@@ -262,6 +262,8 @@ interface Settings {
 
     val shelfItems: UserSetting<List<ShelfItem>>
 
+    val upNextShuffle: UserSetting<Boolean>
+
     fun getVersion(): String
     fun getVersionCode(): Int
 

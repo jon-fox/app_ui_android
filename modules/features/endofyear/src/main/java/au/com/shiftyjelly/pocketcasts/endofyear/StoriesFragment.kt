@@ -15,25 +15,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.BundleCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.viewModels
+import au.com.shiftyjelly.pocketcasts.endofyear.ui.ScreenshotDetectedDialog
 import au.com.shiftyjelly.pocketcasts.endofyear.ui.StoriesPage
+import au.com.shiftyjelly.pocketcasts.models.to.Story
 import au.com.shiftyjelly.pocketcasts.repositories.endofyear.EndOfYearManager
 import au.com.shiftyjelly.pocketcasts.settings.onboarding.OnboardingFlow
 import au.com.shiftyjelly.pocketcasts.settings.onboarding.OnboardingLauncher
 import au.com.shiftyjelly.pocketcasts.settings.onboarding.OnboardingUpgradeSource
 import au.com.shiftyjelly.pocketcasts.ui.helper.StatusBarColor
+import au.com.shiftyjelly.pocketcasts.utils.ScreenshotCaptureDetector
 import au.com.shiftyjelly.pocketcasts.utils.Util
 import au.com.shiftyjelly.pocketcasts.views.activity.WebViewActivity
 import au.com.shiftyjelly.pocketcasts.views.fragments.BaseAppCompatDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.withCreationCallback
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import android.R as AndroidR
 import au.com.shiftyjelly.pocketcasts.localization.R as LR
@@ -45,6 +52,8 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
         get() = StatusBarColor.Custom(Color.BLACK, true)
     private val source: StoriesSource
         get() = requireNotNull(BundleCompat.getSerializable(requireArguments(), ARG_SOURCE, StoriesSource::class.java))
+    private lateinit var screenshotDetector: ScreenshotCaptureDetector
+    private val screenshotDetectedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     private val viewModel by viewModels<EndOfYearViewModel>(
         extrasProducer = {
@@ -63,10 +72,14 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstance: Bundle?) {
         super.onCreate(savedInstance)
-        val isTablet = Util.isTablet(requireContext())
+        val activity = requireActivity()
+        val isTablet = Util.isTablet(activity)
         if (!isTablet) {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             setStyle(STYLE_NORMAL, AndroidR.style.Theme_Material_NoActionBar)
+        }
+        screenshotDetector = ScreenshotCaptureDetector.create(activity) {
+            screenshotDetectedFlow.tryEmit(Unit)
         }
     }
 
@@ -83,15 +96,33 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
             val state by viewModel.uiState.collectAsState()
             val pagerState = rememberPagerState(pageCount = { (state as? UiState.Synced)?.stories?.size ?: 0 })
             val storyChanger = rememberStoryChanger(pagerState, viewModel)
+            var showScreenshotDialog by remember { mutableStateOf(false) }
 
             StoriesPage(
                 state = state,
                 pagerState = pagerState,
                 onChangeStory = storyChanger::change,
+                onHoldStory = { viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.UserHoldingStory) },
+                onReleaseStory = { viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.UserHoldingStory) },
                 onLearnAboutRatings = ::openRatingsInfo,
                 onClickUpsell = ::startUpsellFlow,
+                onRestartPlayback = storyChanger::reset,
+                onRetry = viewModel::syncData,
                 onClose = ::dismiss,
             )
+
+            if (showScreenshotDialog) {
+                ScreenshotDetectedDialog(
+                    onNotNow = {
+                        showScreenshotDialog = false
+                        viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenshotDialog)
+                    },
+                    onShare = {
+                        showScreenshotDialog = false
+                        viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenshotDialog)
+                    },
+                )
+            }
 
             LaunchedEffect(Unit) {
                 viewModel.switchStory.collect {
@@ -135,6 +166,17 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
                     }
                 }
             }
+
+            LaunchedEffect(Unit) {
+                screenshotDetectedFlow.collectLatest {
+                    val stories = (state as? UiState.Synced)?.stories
+                    val currentStory = stories?.getOrNull(pagerState.currentPage)
+                    if (currentStory?.isShareble == true) {
+                        viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.ScreenshotDialog)
+                        showScreenshotDialog = true
+                    }
+                }
+            }
         }
     }
 
@@ -145,16 +187,18 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
 
     override fun onResume() {
         super.onResume()
-        viewModel.resumeStoryAutoProgress()
+        viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
+        screenshotDetector.register()
     }
 
     override fun onPause() {
+        screenshotDetector.unregister()
         // Pause auto progress when the fragment is not active.
         // This makes sure that users see all stories and they
         // won't auto switch for example when signing up takes
         // some time or when the EoY flow is interruped by
         // some other user actions such as a phone call.
-        viewModel.pauseStoryAutoProgress()
+        viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
         super.onPause()
     }
 
@@ -222,5 +266,9 @@ private class StoryChanger(
                 scope.launch { pagerState.scrollToPage(nextIndex) }
             }
         }
+    }
+
+    fun reset() {
+        scope.launch { pagerState.scrollToPage(0) }
     }
 }

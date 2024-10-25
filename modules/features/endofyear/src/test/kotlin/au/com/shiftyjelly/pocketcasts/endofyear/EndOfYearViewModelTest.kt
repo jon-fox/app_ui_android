@@ -3,18 +3,19 @@ package au.com.shiftyjelly.pocketcasts.endofyear
 import app.cash.turbine.Turbine
 import app.cash.turbine.TurbineTestContext
 import app.cash.turbine.test
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.CompletionRate
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.Cover
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.Ending
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.LongestEpisode
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.NumberOfShows
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.PlusInterstitial
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.Ratings
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.TopShow
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.TopShows
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.TotalTime
-import au.com.shiftyjelly.pocketcasts.endofyear.Story.YearVsYear
 import au.com.shiftyjelly.pocketcasts.models.to.RatingStats
+import au.com.shiftyjelly.pocketcasts.models.to.Story
+import au.com.shiftyjelly.pocketcasts.models.to.Story.CompletionRate
+import au.com.shiftyjelly.pocketcasts.models.to.Story.Cover
+import au.com.shiftyjelly.pocketcasts.models.to.Story.Ending
+import au.com.shiftyjelly.pocketcasts.models.to.Story.LongestEpisode
+import au.com.shiftyjelly.pocketcasts.models.to.Story.NumberOfShows
+import au.com.shiftyjelly.pocketcasts.models.to.Story.PlusInterstitial
+import au.com.shiftyjelly.pocketcasts.models.to.Story.Ratings
+import au.com.shiftyjelly.pocketcasts.models.to.Story.TopShow
+import au.com.shiftyjelly.pocketcasts.models.to.Story.TopShows
+import au.com.shiftyjelly.pocketcasts.models.to.Story.TotalTime
+import au.com.shiftyjelly.pocketcasts.models.to.Story.YearVsYear
 import au.com.shiftyjelly.pocketcasts.models.to.TopPodcast
 import au.com.shiftyjelly.pocketcasts.models.type.SubscriptionTier
 import au.com.shiftyjelly.pocketcasts.repositories.endofyear.EndOfYearManager
@@ -455,7 +456,7 @@ class EndOfYearViewModelTest {
         subscriptionTier.emit(SubscriptionTier.NONE)
 
         viewModel.syncData()
-        viewModel.resumeStoryAutoProgress()
+        viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
         val stories = (viewModel.uiState.first() as UiState.Synced).stories
 
         viewModel.switchStory.test {
@@ -513,13 +514,42 @@ class EndOfYearViewModelTest {
             expectNoEvents()
 
             // Resume after pause
-            viewModel.resumeStoryAutoProgress()
+            viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
             assertEquals(Unit, awaitItem())
 
             // Pause after resume
-            viewModel.pauseStoryAutoProgress()
+            viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
             viewModel.onStoryChanged(stories.getStoryOfType<NumberOfShows>())
             expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `pause story auto progress as long as there is at least one reason`() = runTest {
+        endOfYearSync.isSynced.add(true)
+        endOfYearManager.stats.add(stats)
+        subscriptionTier.emit(SubscriptionTier.NONE)
+
+        viewModel.syncData()
+        val stories = (viewModel.uiState.first() as UiState.Synced).stories
+
+        viewModel.switchStory.test {
+            expectNoEvents()
+
+            // Initially switching should be paused
+            viewModel.onStoryChanged(stories.getStoryOfType<Cover>())
+            expectNoEvents()
+
+            viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.UserHoldingStory)
+            viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
+            expectNoEvents()
+
+            viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
+            expectNoEvents()
+
+            viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.UserHoldingStory)
+            viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenInBackground)
+            assertEquals(Unit, awaitItem())
         }
     }
 
