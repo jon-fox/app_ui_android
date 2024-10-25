@@ -381,6 +381,12 @@ class DownloadEpisodeTask @AssistedInject constructor(
                     // okhttp can return -1 if unknown so try to find it manually
                     bytesRemaining = response.header("Content-Length", null)?.toLongOrNull() ?: 0L
                 }
+
+                // jusskipit determination
+                if (jusskipit()) {
+                    downloadUrl = getJusskipitDownloadUrl()
+                }
+
                 episodeDownloadError.expectedContentLength = bytesRemaining
                 val contentType = body.contentType()
 
