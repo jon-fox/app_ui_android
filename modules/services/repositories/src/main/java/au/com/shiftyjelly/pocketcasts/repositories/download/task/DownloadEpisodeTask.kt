@@ -282,7 +282,13 @@ class DownloadEpisodeTask @AssistedInject constructor(
 
         try {
             var downloadUrl = episode.downloadUrl?.toHttpUrlOrNull()
-            if (downloadUrl == null && episode is UserEpisode) {
+
+            // jusskipit determination
+            if (jusskipit == true && downloadUrl == null && episode is UserEpisode) {
+                downloadUrl = runBlocking { userEpisodeManager.getJusskipitPlaybackUrl(episode).await()?.toHttpUrlOrNull() }
+            }
+
+            if (jusskipit == false && downloadUrl == null && episode is UserEpisode) {
                 downloadUrl = runBlocking { userEpisodeManager.getPlaybackUrl(episode).await()?.toHttpUrlOrNull() }
             }
 
@@ -380,11 +386,6 @@ class DownloadEpisodeTask @AssistedInject constructor(
                 if (bytesRemaining <= 0) {
                     // okhttp can return -1 if unknown so try to find it manually
                     bytesRemaining = response.header("Content-Length", null)?.toLongOrNull() ?: 0L
-                }
-
-                // jusskipit determination
-                if (jusskipit()) {
-                    downloadUrl = getJusskipitDownloadUrl()
                 }
 
                 episodeDownloadError.expectedContentLength = bytesRemaining
