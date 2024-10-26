@@ -8,7 +8,6 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -38,6 +37,7 @@ import au.com.shiftyjelly.pocketcasts.views.activity.WebViewActivity
 import au.com.shiftyjelly.pocketcasts.views.fragments.BaseAppCompatDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.withCreationCallback
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -58,7 +58,12 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
     private val viewModel by viewModels<EndOfYearViewModel>(
         extrasProducer = {
             defaultViewModelCreationExtras.withCreationCallback<EndOfYearViewModel.Factory> { factory ->
-                factory.create(EndOfYearManager.YEAR_TO_SYNC)
+                val year = EndOfYearManager.YEAR_TO_SYNC
+                factory.create(
+                    year = year,
+                    topListTitle = getString(LR.string.end_of_year_story_top_podcasts_list_title, year.value),
+                    source = source,
+                )
             }
         },
     )
@@ -81,9 +86,11 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
         screenshotDetector = ScreenshotCaptureDetector.create(activity) {
             screenshotDetectedFlow.tryEmit(Unit)
         }
+        if (savedInstance == null) {
+            viewModel.trackStoriesShown()
+        }
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -93,22 +100,29 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
             LaunchedEffect(Unit) {
                 viewModel.syncData()
             }
+            val scope = rememberCoroutineScope()
             val state by viewModel.uiState.collectAsState()
             val pagerState = rememberPagerState(pageCount = { (state as? UiState.Synced)?.stories?.size ?: 0 })
             val storyChanger = rememberStoryChanger(pagerState, viewModel)
+            val captureController = rememberStoryCaptureController()
             var showScreenshotDialog by remember { mutableStateOf(false) }
 
             StoriesPage(
                 state = state,
                 pagerState = pagerState,
+                controller = captureController,
                 onChangeStory = storyChanger::change,
+                onShareStory = ::shareStory,
                 onHoldStory = { viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.UserHoldingStory) },
                 onReleaseStory = { viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.UserHoldingStory) },
                 onLearnAboutRatings = ::openRatingsInfo,
                 onClickUpsell = ::startUpsellFlow,
                 onRestartPlayback = storyChanger::reset,
                 onRetry = viewModel::syncData,
-                onClose = ::dismiss,
+                onClose = {
+                    viewModel.trackStoriesClosed()
+                    dismiss()
+                },
             )
 
             if (showScreenshotDialog) {
@@ -120,6 +134,16 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
                     onShare = {
                         showScreenshotDialog = false
                         viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.ScreenshotDialog)
+                        val stories = (state as? UiState.Synced)?.stories
+                        val story = stories?.getOrNull(pagerState.currentPage)
+                        if (story != null) {
+                            scope.launch {
+                                val screenshot = captureController.capture(story)
+                                if (screenshot != null) {
+                                    viewModel.share(story, screenshot)
+                                }
+                            }
+                        }
                     },
                 )
             }
@@ -128,6 +152,7 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
                 viewModel.switchStory.collect {
                     val stories = (state as? UiState.Synced)?.stories.orEmpty()
                     if (stories.getOrNull(pagerState.currentPage) is Story.Ending) {
+                        viewModel.trackStoriesAutoFinished()
                         dismiss()
                     } else {
                         storyChanger.change(moveForward = true)
@@ -177,6 +202,16 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
                     }
                 }
             }
+
+            LaunchedEffect(Unit) {
+                snapshotFlow { captureController.isSharing }.collect { isSharing ->
+                    if (isSharing) {
+                        viewModel.pauseStoryAutoProgress(StoryProgressPauseReason.TakingScreenshot)
+                    } else {
+                        viewModel.resumeStoryAutoProgress(StoryProgressPauseReason.TakingScreenshot)
+                    }
+                }
+            }
         }
     }
 
@@ -203,16 +238,22 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
     }
 
     private fun startUpsellFlow() {
+        viewModel.trackUpsellShown()
         val flow = OnboardingFlow.Upsell(OnboardingUpgradeSource.END_OF_YEAR)
         OnboardingLauncher.openOnboardingFlow(requireActivity(), flow)
     }
 
     private fun openRatingsInfo() {
+        viewModel.trackLearnRatingsShown()
         WebViewActivity.show(
             requireActivity(),
             getString(LR.string.podcast_ratings_page_title),
             "https://support.pocketcasts.com/knowledge-base/ratings/",
         )
+    }
+
+    private fun shareStory(story: Story, file: File) {
+        viewModel.share(story, file)
     }
 
     enum class StoriesSource(val value: String) {
@@ -238,7 +279,6 @@ class StoriesFragment : BaseAppCompatDialogFragment() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun rememberStoryChanger(
     pagerState: PagerState,
@@ -248,7 +288,6 @@ private fun rememberStoryChanger(
     return remember(pagerState) { StoryChanger(pagerState, viewModel, scope) }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 private class StoryChanger(
     private val pagerState: PagerState,
     private val viewModel: EndOfYearViewModel,
@@ -269,6 +308,7 @@ private class StoryChanger(
     }
 
     fun reset() {
+        viewModel.trackReplayStoriesTapped()
         scope.launch { pagerState.scrollToPage(0) }
     }
 }

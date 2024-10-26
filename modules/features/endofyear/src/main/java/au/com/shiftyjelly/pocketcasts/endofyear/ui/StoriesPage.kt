@@ -1,7 +1,6 @@
 package au.com.shiftyjelly.pocketcasts.endofyear.ui
 
 import android.content.Context
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,20 +51,23 @@ import au.com.shiftyjelly.pocketcasts.compose.Devices
 import au.com.shiftyjelly.pocketcasts.compose.components.PagerProgressingIndicator
 import au.com.shiftyjelly.pocketcasts.compose.components.TextH30
 import au.com.shiftyjelly.pocketcasts.compose.components.TextP40
+import au.com.shiftyjelly.pocketcasts.endofyear.StoryCaptureController
 import au.com.shiftyjelly.pocketcasts.endofyear.UiState
 import au.com.shiftyjelly.pocketcasts.models.to.Story
 import au.com.shiftyjelly.pocketcasts.utils.Util
+import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 import au.com.shiftyjelly.pocketcasts.images.R as IR
 import au.com.shiftyjelly.pocketcasts.localization.R as LR
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun StoriesPage(
     state: UiState,
     pagerState: PagerState,
+    controller: StoryCaptureController,
     onChangeStory: (Boolean) -> Unit,
+    onShareStory: (Story, File) -> Unit,
     onHoldStory: () -> Unit,
     onReleaseStory: () -> Unit,
     onLearnAboutRatings: () -> Unit,
@@ -99,8 +101,10 @@ internal fun StoriesPage(
                     coverFontSize = coverFontSize,
                     coverTextHeight = coverTextHeight,
                 ),
+                controller = controller,
                 pagerState = pagerState,
                 onChangeStory = onChangeStory,
+                onShareStory = onShareStory,
                 onHoldStory = onHoldStory,
                 onReleaseStory = onReleaseStory,
                 onLearnAboutRatings = onLearnAboutRatings,
@@ -137,13 +141,14 @@ internal fun StoriesPage(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun Stories(
     stories: List<Story>,
     measurements: EndOfYearMeasurements,
     pagerState: PagerState,
+    controller: StoryCaptureController,
     onChangeStory: (Boolean) -> Unit,
+    onShareStory: (Story, File) -> Unit,
     onHoldStory: () -> Unit,
     onReleaseStory: () -> Unit,
     onLearnAboutRatings: () -> Unit,
@@ -170,22 +175,73 @@ private fun Stories(
         },
     ) { index ->
         when (val story = stories[index]) {
-            is Story.Cover -> CoverStory(story, measurements)
-            is Story.NumberOfShows -> NumberOfShowsStory(story, measurements)
-            is Story.TopShow -> TopShowStory(story, measurements)
-            is Story.TopShows -> TopShowsStory(story, measurements)
-            is Story.Ratings -> RatingsStory(story, measurements, onLearnAboutRatings)
-            is Story.TotalTime -> TotalTimeStory(story, measurements)
-            is Story.LongestEpisode -> LongestEpisodeStory(story, measurements)
-            is Story.PlusInterstitial -> PlusInterstitialStory(story, measurements, onClickUpsell)
-            is Story.YearVsYear -> YearVsYearStory(story, measurements)
-            is Story.CompletionRate -> CompletionRateStory(story, measurements)
-            is Story.Ending -> EndingStory(story, measurements, onRestartPlayback)
+            is Story.Cover -> CoverStory(
+                story = story,
+                measurements = measurements,
+            )
+            is Story.NumberOfShows -> NumberOfShowsStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+            )
+            is Story.TopShow -> TopShowStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+            )
+            is Story.TopShows -> TopShowsStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+            )
+            is Story.Ratings -> RatingsStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+                onLearnAboutRatings = onLearnAboutRatings,
+            )
+            is Story.TotalTime -> TotalTimeStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+            )
+            is Story.LongestEpisode -> LongestEpisodeStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+            )
+            is Story.PlusInterstitial -> PlusInterstitialStory(
+                story = story,
+                measurements = measurements,
+                onClickUpsell = onClickUpsell,
+            )
+            is Story.YearVsYear -> YearVsYearStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+            )
+            is Story.CompletionRate -> CompletionRateStory(
+                story = story,
+                measurements = measurements,
+                controller = controller,
+                onShareStory = { file -> onShareStory(story, file) },
+            )
+            is Story.Ending -> EndingStory(
+                story = story,
+                measurements = measurements,
+                onRestartPlayback = onRestartPlayback,
+            )
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun BoxScope.TopControls(
     pagerState: PagerState,

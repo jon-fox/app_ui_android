@@ -9,9 +9,11 @@ sealed interface Story {
     val previewDuration: Duration? get() = 7.seconds
     val isFree: Boolean get() = true
     val isShareble: Boolean get() = true
+    val analyticsValue: String
 
     data object Cover : Story {
         override val isShareble = false
+        override val analyticsValue = "cover"
     }
 
     data class NumberOfShows(
@@ -19,41 +21,55 @@ sealed interface Story {
         val epsiodeCount: Int,
         val topShowIds: List<String>,
         val bottomShowIds: List<String>,
-    ) : Story
+    ) : Story {
+        override val analyticsValue = "number_of_shows"
+    }
 
     data class TopShow(
         val show: TopPodcast,
-    ) : Story
+    ) : Story {
+        override val analyticsValue = "top_1_show"
+    }
 
     data class TopShows(
         val shows: List<TopPodcast>,
-    ) : Story
+        val podcastListUrl: String?,
+    ) : Story {
+        override val analyticsValue = "top_5_shows"
+    }
 
     data class Ratings(
         val stats: RatingStats,
     ) : Story {
         override val isShareble get() = stats.max().second != 0
+        override val analyticsValue = "ratings"
     }
 
     data class TotalTime(
         val duration: Duration,
-    ) : Story
+    ) : Story {
+        override val analyticsValue = "total_time"
+    }
 
     data class LongestEpisode(
         val episode: LongestEpisodeData,
-    ) : Story
+    ) : Story {
+        override val analyticsValue = "longest_episode"
+    }
 
     data object PlusInterstitial : Story {
         override val previewDuration = null
         override val isShareble = false
+        override val analyticsValue = "plus_interstitial"
     }
 
     data class YearVsYear(
         val lastYearDuration: Duration,
         val thisYearDuration: Duration,
-        val subscriptionTier: SubscriptionTier?,
+        val subscriptionTier: SubscriptionTier,
     ) : Story {
         override val isFree = false
+        override val analyticsValue = "year_vs_year"
 
         val yearOverYearChange
             get() = when {
@@ -66,9 +82,10 @@ sealed interface Story {
     data class CompletionRate(
         val listenedCount: Int,
         val completedCount: Int,
-        val subscriptionTier: SubscriptionTier?,
+        val subscriptionTier: SubscriptionTier,
     ) : Story {
         override val isFree = false
+        override val analyticsValue = "completion_rate"
 
         val completionRate
             get() = when {
@@ -79,5 +96,6 @@ sealed interface Story {
 
     data object Ending : Story {
         override val isShareble get() = false
+        override val analyticsValue = "ending"
     }
 }
