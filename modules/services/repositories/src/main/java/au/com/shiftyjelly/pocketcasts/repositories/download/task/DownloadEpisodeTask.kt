@@ -79,12 +79,12 @@ class DownloadEpisodeTask @AssistedInject constructor(
     var downloadManager: DownloadManager,
     var episodeManager: EpisodeManager,
     var userEpisodeManager: UserEpisodeManager,
-    var jusskipit: Boolean?,
     @Downloads private val callFactory: Call.Factory,
     @Downloads private val requestBuilderProvider: Provider<Request.Builder>,
 ) : Worker(context, params) {
 
     companion object {
+
         private const val MAX_RETRIES = 5
 
         private const val ERROR_FAILED_EPISODE = "This episode may have been moved or deleted. Contact the podcast author."
@@ -115,9 +115,11 @@ class DownloadEpisodeTask @AssistedInject constructor(
         const val OUTPUT_EPISODE_UUID = "episode_uuid"
         const val OUTPUT_CANCELLED = "cancelled"
         const val FIRE_TOAST = "fire_toast"
+        const val INPUT_JUSSKIPIT = "jusskipit"
     }
 
     private lateinit var episode: BaseEpisode
+    private val jusskipit: Boolean = params.inputData.getBoolean(INPUT_JUSSKIPIT, false)
     private val episodeUUID: String? = inputData.getString(INPUT_EPISODE_UUID)
     private val pathToSaveTo: String? = inputData.getString(INPUT_PATH_TO_SAVE_TO)
     private val tempDownloadPath: String? = inputData.getString(INPUT_TEMP_PATH)
