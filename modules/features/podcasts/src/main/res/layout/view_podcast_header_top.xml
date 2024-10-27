@@ -180,4 +180,19 @@
         app:layout_constraintTop_toBottomOf="@+id/header"
         app:srcCompat="@drawable/ic_tick_small" />
 
+    <Switch
+        android:id="@+id/switch_jusskipit"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/support_02"
+        android:text="Enable JusSkipIt"
+        android:textColor="?attr/primary_interactive_02"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/header"
+        tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>
