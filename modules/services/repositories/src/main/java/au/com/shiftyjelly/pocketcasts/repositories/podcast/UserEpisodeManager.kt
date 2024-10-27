@@ -80,7 +80,7 @@ interface UserEpisodeManager {
     fun cancelUpload(userEpisode: UserEpisode)
     suspend fun syncFiles(playbackManager: PlaybackManager)
     fun getPlaybackUrl(userEpisode: UserEpisode): Single<String>
-    fun getJusskipitPlaybackUrl(userEpisode: UserEpisode): Single<String>
+    fun getJusskipitPlaybackUrl(downloadUrl: String): Single<String>
     fun observeDownloadUserEpisodes(): Flowable<List<UserEpisode>>
     suspend fun updateDownloadedFilePath(episode: UserEpisode, filePath: String)
     suspend fun updateFileType(episode: UserEpisode, fileType: String)
@@ -528,8 +528,8 @@ class UserEpisodeManagerImpl @Inject constructor(
         return syncManager.getPlaybackUrl(userEpisode)
     }
 
-    override fun getJusskipitPlaybackUrl(userEpisode: UserEpisode): Single<String> {
-        return syncManager.getJusskipitPlaybackUrl(userEpisode)
+    override fun getJusskipitPlaybackUrl(downloadUrl: String): Single<String> {
+        return syncManager.getJusskipitPlaybackUrl(downloadUrl)
     }
 
     override suspend fun updateEpisodeStatus(episode: UserEpisode, status: EpisodeStatusEnum) {
