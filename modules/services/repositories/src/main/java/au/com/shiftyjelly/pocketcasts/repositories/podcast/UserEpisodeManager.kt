@@ -24,6 +24,8 @@ import au.com.shiftyjelly.pocketcasts.repositories.download.task.UploadEpisodeTa
 import au.com.shiftyjelly.pocketcasts.repositories.playback.PlaybackManager
 import au.com.shiftyjelly.pocketcasts.repositories.subscription.SubscriptionManager
 import au.com.shiftyjelly.pocketcasts.repositories.sync.SyncManager
+import au.com.shiftyjelly.pocketcasts.repositories.sync.SyncManagerImpl
+import au.com.shiftyjelly.pocketcasts.servers.model.PlaybackUrlAndToken
 import au.com.shiftyjelly.pocketcasts.servers.sync.FileAccount
 import au.com.shiftyjelly.pocketcasts.servers.sync.FilePost
 import au.com.shiftyjelly.pocketcasts.servers.sync.FileUploadData
@@ -80,7 +82,7 @@ interface UserEpisodeManager {
     fun cancelUpload(userEpisode: UserEpisode)
     suspend fun syncFiles(playbackManager: PlaybackManager)
     fun getPlaybackUrl(userEpisode: UserEpisode): Single<String>
-    fun getJusskipitPlaybackUrl(downloadUrl: String): Single<String>
+    fun getJusskipitPlaybackUrl(): Single<PlaybackUrlAndToken>
     fun observeDownloadUserEpisodes(): Flowable<List<UserEpisode>>
     suspend fun updateDownloadedFilePath(episode: UserEpisode, filePath: String)
     suspend fun updateFileType(episode: UserEpisode, fileType: String)
@@ -528,8 +530,8 @@ class UserEpisodeManagerImpl @Inject constructor(
         return syncManager.getPlaybackUrl(userEpisode)
     }
 
-    override fun getJusskipitPlaybackUrl(downloadUrl: String): Single<String> {
-        return syncManager.getJusskipitPlaybackUrl(downloadUrl)
+    override fun getJusskipitPlaybackUrl(): Single<PlaybackUrlAndToken> {
+        return syncManager.getJusskipitPlaybackUrl()
     }
 
     override suspend fun updateEpisodeStatus(episode: UserEpisode, status: EpisodeStatusEnum) {

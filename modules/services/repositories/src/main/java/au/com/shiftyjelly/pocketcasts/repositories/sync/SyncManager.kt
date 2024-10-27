@@ -26,6 +26,7 @@ import au.com.shiftyjelly.pocketcasts.servers.sync.UserChangeResponse
 import au.com.shiftyjelly.pocketcasts.servers.sync.history.HistoryYearResponse
 import au.com.shiftyjelly.pocketcasts.servers.sync.login.ExchangeSonosResponse
 import au.com.shiftyjelly.pocketcasts.servers.sync.update.SyncUpdateResponse
+import au.com.shiftyjelly.pocketcasts.servers.model.PlaybackUrlAndToken
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.pocketcasts.service.api.PodcastRatingResponse
 import com.pocketcasts.service.api.PodcastRatingsResponse
@@ -71,7 +72,7 @@ interface SyncManager : NamedSettingsCaller {
     fun deleteImageFromServer(episode: UserEpisode): Single<Response<Void>>
     fun deleteFromServer(episode: UserEpisode): Single<Response<Void>>
     fun getPlaybackUrl(episode: UserEpisode): Single<String>
-    fun getJusskipitPlaybackUrl(downloadUrl: String): Single<String>
+    fun getJusskipitPlaybackUrl(): Single<PlaybackUrlAndToken>
 
     // History
     fun historySync(request: HistorySyncRequest): Single<HistorySyncResponse>
