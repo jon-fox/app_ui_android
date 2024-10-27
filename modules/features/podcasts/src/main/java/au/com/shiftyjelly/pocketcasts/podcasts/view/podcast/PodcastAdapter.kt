@@ -16,6 +16,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.Switch
 import android.widget.TextView
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -742,6 +743,17 @@ class PodcastAdapter(
             binding.bottom.ratings.setViewCompositionStrategy(
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
+
+            // Find the Switch by its ID
+            val switchJusskipit = binding.root.findViewById<Switch>(R.id.switch_jusskipit)
+
+            // Set a listener for the Switch
+            switchJusskipit.setOnCheckedChangeListener { _, isChecked ->
+                // Handle the switch state change
+                // You can call a method in the adapter to handle the state change
+                adapter.onJusSkipItSwitchChanged(isChecked)
+                downloadManager.setJusSkipIt(isChecked)
+            }
         }
 
         private fun unsubscribe() {
@@ -850,6 +862,7 @@ class PodcastAdapter(
             })
             set.start()
         }
+
     }
 
     private val NoOpEpisode = PodcastEpisode(uuid = "", publishedDate = Date())

@@ -4,6 +4,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
+import timber.log.Timber
 
 abstract class LargeListAdapter<T : Any, VH : RecyclerView.ViewHolder>(private val animationCutoff: Int = 1500, differ: DiffUtil.ItemCallback<T>) : ListAdapter<T, VH>(differ) {
     var lastListCount = 0
@@ -34,5 +35,16 @@ abstract class LargeListAdapter<T : Any, VH : RecyclerView.ViewHolder>(private v
         // We also don't just submit null lists from outside the adapter because we still want normal sized
         // podcasts to calculate their diff and animate
         nextDiffIsLarge = true
+    }
+
+    fun onJusSkipItSwitchChanged(isChecked: Boolean) {
+        // Handle the switch state change
+        if (isChecked) {
+            // Code to enable JusSkipIt feature
+            Timber.d("JusSkipIt feature enabled")
+        } else {
+            // Code to disable JusSkipIt feature
+            Timber.d("JusSkipIt feature disabled")
+        }
     }
 }

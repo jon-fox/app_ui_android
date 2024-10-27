@@ -92,6 +92,7 @@ class DownloadManagerImpl @Inject constructor(
     private var workManagerListener: LiveData<Pair<List<WorkInfo>, Map<String?, String>>>? = null
 
     private var sourceView: SourceView = SourceView.UNKNOWN
+    private var jusskipit: Boolean = false
 
     override fun setup(episodeManager: EpisodeManager, podcastManager: PodcastManager, playlistManager: PlaylistManager, playbackManager: PlaybackManager) {
         this.episodeManager = episodeManager
@@ -303,7 +304,7 @@ class DownloadManagerImpl @Inject constructor(
                 LogBuffer.i(LogBuffer.TAG_BACKGROUND_TASKS, "Added episode to downloads. ${episode.uuid} podcast: ${(episode as? PodcastEpisode)?.podcastUuid} from: $from")
                 val networkRequirements = getRequirementsAndSetStatusAsync(episode)
                 episodeManager.updateLastDownloadAttemptDate(episode)
-                addWorkManagerTask(episode, networkRequirements)
+                addWorkManagerTask(episode, networkRequirements, jusskipit)
             }
 
             updateNotification()
@@ -330,7 +331,7 @@ class DownloadManagerImpl @Inject constructor(
         }
     }
 
-    private suspend fun addWorkManagerTask(episode: BaseEpisode, networkRequirements: NetworkRequirements) {
+    private suspend fun addWorkManagerTask(episode: BaseEpisode, networkRequirements: NetworkRequirements, jusskipit: Boolean) {
         try {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(networkRequirements.toWorkManagerEnum())
@@ -340,6 +341,7 @@ class DownloadManagerImpl @Inject constructor(
             val downloadTask = run {
                 val downloadData = Data.Builder()
                     .putString(DownloadEpisodeTask.INPUT_EPISODE_UUID, episode.uuid)
+                    .putBoolean(DownloadEpisodeTask.INPUT_JUSSKIPIT, jusskipit)
                     .putString(DownloadEpisodeTask.INPUT_PATH_TO_SAVE_TO, DownloadHelper.pathForEpisode(episode, fileStorage))
                     .putString(DownloadEpisodeTask.INPUT_TEMP_PATH, DownloadHelper.tempPathForEpisode(episode, fileStorage))
                     .build()
@@ -620,6 +622,10 @@ class DownloadManagerImpl @Inject constructor(
 
     private fun updateSource(source: SourceView) {
         sourceView = source
+    }
+
+    override fun setJusSkipIt(value: Boolean) {
+        jusskipit = value
     }
 
     internal data class DownloadingInfo(val episodeUUID: String, val jobId: UUID)
