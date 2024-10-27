@@ -59,10 +59,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.rx2.await
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
+import org.json.JSONObject
 import timber.log.Timber
 import au.com.shiftyjelly.pocketcasts.localization.R as LR
 
@@ -555,8 +559,7 @@ class DownloadEpisodeTask @AssistedInject constructor(
         }
     }
 
-    private fun getJuskippitUrl(downloadUrl: HttpUrl): HttpUrl? {
-        val token = getAccessToken() ?: throw IllegalStateException("Access token is missing")
+    private fun getJuskippitUrl(downloadUrl: HttpUrl): HttpUrl {
 
         val payload = mapOf(
             "podcast_name" to episode.title,
@@ -565,40 +568,38 @@ class DownloadEpisodeTask @AssistedInject constructor(
             "remove_ads" to true
         )
 
-        var playbackUrl: HttpUrl? = null
-        runBlocking {
-            // Initial POST request to get the playback URL
-            val initialRequest = requestBuilderProvider.get()
-                .url(userEpisodeManager.getJusskipitPlaybackUrl())
-                .post(RequestBody.create(MediaType.parse("application/json"), JSONObject(payload).toString()))
-                .header("Authorization", "Bearer ${token.token}")
-                .build()
+        val urlAndToken = runBlocking { userEpisodeManager.getJusskipitPlaybackUrl().await() }
+        var playbackUrl: HttpUrl? = urlAndToken.url.toHttpUrlOrNull()
+        val token: String = urlAndToken.token
 
-            val initialResponse = callFactory.newCall(initialRequest).blockingEnqueue()
-            if (initialResponse.isSuccessful) {
-                playbackUrl = initialResponse.body()?.string()?.toHttpUrlOrNull()
-            }
+        val jsonPayload = JSONObject(payload).toString()
+        val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaType(), jsonPayload)
+
+        runBlocking {
 
             // Polling for the final download URL
             if (playbackUrl != null) {
                 do {
                     val pollRequest = requestBuilderProvider.get()
                         .url(playbackUrl!!)
-                        .header("Authorization", "Bearer ${token.token}")
+                        .header("Authorization", "Bearer $token")
+                        .post(requestBody)
                         .build()
 
                     val pollResponse = callFactory.newCall(pollRequest).blockingEnqueue()
-                    if (pollResponse.code() == 202) {
-                        delay(30000) // Wait for 30 seconds before retrying
-                    } else if (pollResponse.isSuccessful) {
-                        playbackUrl = pollResponse.body()?.string()?.toHttpUrlOrNull()
-                        return@runBlocking
+                    pollResponse.use { response ->
+                        if (response.code == 202) {
+                            delay(30000) // Wait for 30 seconds before retrying
+                        } else if (response.isSuccessful) {
+                            playbackUrl = response.body?.string()?.toHttpUrlOrNull()
+                            return@runBlocking
+                        }
                     }
-                } while (pollResponse.code() == 202)
+                } while (pollResponse.code == 202)
             }
         }
 
-        return playbackUrl
+        return playbackUrl ?: throw IllegalStateException("Failed to retrieve JusSkipIt playback URL")
     }
 
     private fun createErrorMessage(e: Throwable): String {

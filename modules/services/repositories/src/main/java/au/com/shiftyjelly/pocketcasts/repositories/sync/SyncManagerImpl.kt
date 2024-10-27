@@ -18,6 +18,7 @@ import au.com.shiftyjelly.pocketcasts.preferences.Settings
 import au.com.shiftyjelly.pocketcasts.repositories.podcast.UploadProgressManager
 import au.com.shiftyjelly.pocketcasts.repositories.podcast.toUploadData
 import au.com.shiftyjelly.pocketcasts.servers.model.AuthResultModel
+import au.com.shiftyjelly.pocketcasts.servers.model.PlaybackUrlAndToken
 import au.com.shiftyjelly.pocketcasts.servers.sync.EpisodeSyncRequest
 import au.com.shiftyjelly.pocketcasts.servers.sync.FileAccount
 import au.com.shiftyjelly.pocketcasts.servers.sync.FileImageUploadData
@@ -86,8 +87,7 @@ class SyncManagerImpl @Inject constructor(
         private const val TRACKS_KEY_ERROR_CODE = "error_code"
     }
 
-// Account
-
+    // Account
     override suspend fun emailChange(newEmail: String, password: String): UserChangeResponse {
         val result = getCacheTokenOrLogin { token ->
             syncServiceManager.emailChange(newEmail, password, token)
@@ -303,9 +303,11 @@ class SyncManagerImpl @Inject constructor(
             syncServiceManager.getPlaybackUrl(episode, token)
         }
 
-    override fun getJusskipitPlaybackUrl(episode: UserEpisode): Single<String> =
+    override fun getJusskipitPlaybackUrl(): Single<PlaybackUrlAndToken> =
         getCacheTokenOrLoginRxSingle { token ->
-            syncServiceManager.getJusSkipItPlaybackUrl(episode, token)
+            syncServiceManager.getJusSkipItPlaybackUrl().map { url ->
+                PlaybackUrlAndToken(url, token.value)
+            }
         }
 
     override fun getUserEpisode(uuid: String): Maybe<ServerFile> =
