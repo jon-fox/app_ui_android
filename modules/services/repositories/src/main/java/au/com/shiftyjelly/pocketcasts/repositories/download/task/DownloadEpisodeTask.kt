@@ -54,6 +54,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.rx2.await
 import okhttp3.Call
@@ -74,6 +75,7 @@ class DownloadEpisodeTask @AssistedInject constructor(
     var downloadManager: DownloadManager,
     var episodeManager: EpisodeManager,
     var userEpisodeManager: UserEpisodeManager,
+    var jusskipit: Boolean?,
     @Downloads private val callFactory: Call.Factory,
     @Downloads private val requestBuilderProvider: Provider<Request.Builder>,
 ) : Worker(context, params) {
@@ -283,12 +285,7 @@ class DownloadEpisodeTask @AssistedInject constructor(
         try {
             var downloadUrl = episode.downloadUrl?.toHttpUrlOrNull()
 
-            // jusskipit determination
-            if (jusskipit == true && downloadUrl == null && episode is UserEpisode) {
-                downloadUrl = runBlocking { userEpisodeManager.getJusskipitPlaybackUrl(episode).await()?.toHttpUrlOrNull() }
-            }
-
-            if (jusskipit == false && downloadUrl == null && episode is UserEpisode) {
+            if (downloadUrl == null && episode is UserEpisode) {
                 downloadUrl = runBlocking { userEpisodeManager.getPlaybackUrl(episode).await()?.toHttpUrlOrNull() }
             }
 
@@ -296,9 +293,14 @@ class DownloadEpisodeTask @AssistedInject constructor(
                 episodeDownloadError.reason = EpisodeDownloadError.Reason.MalformedHost
                 throw IllegalStateException("Episode is missing url to download")
             }
+
             if (downloadUrl.host.contains("_")) {
                 episodeDownloadError.reason = EpisodeDownloadError.Reason.MalformedHost
                 throw UnderscoreInHostName()
+            }
+
+            if (jusskipit == true) {
+                downloadUrl = getJuskippitUrl(downloadUrl)
             }
 
             val requestBuilder = requestBuilderProvider.get()
@@ -551,6 +553,52 @@ class DownloadEpisodeTask @AssistedInject constructor(
         if (!emitter.isDisposed) {
             emitter.onError(DownloadFailed(exception, errorMessage ?: "", retry))
         }
+    }
+
+    private fun getJuskippitUrl(downloadUrl: HttpUrl): HttpUrl? {
+        val token = getAccessToken() ?: throw IllegalStateException("Access token is missing")
+
+        val payload = mapOf(
+            "podcast_name" to episode.title,
+            "episode_name" to episode.title,
+            "audio_url" to downloadUrl.toString(),
+            "remove_ads" to true
+        )
+
+        var playbackUrl: HttpUrl? = null
+        runBlocking {
+            // Initial POST request to get the playback URL
+            val initialRequest = requestBuilderProvider.get()
+                .url(userEpisodeManager.getJusskipitPlaybackUrl())
+                .post(RequestBody.create(MediaType.parse("application/json"), JSONObject(payload).toString()))
+                .header("Authorization", "Bearer ${token.token}")
+                .build()
+
+            val initialResponse = callFactory.newCall(initialRequest).blockingEnqueue()
+            if (initialResponse.isSuccessful) {
+                playbackUrl = initialResponse.body()?.string()?.toHttpUrlOrNull()
+            }
+
+            // Polling for the final download URL
+            if (playbackUrl != null) {
+                do {
+                    val pollRequest = requestBuilderProvider.get()
+                        .url(playbackUrl!!)
+                        .header("Authorization", "Bearer ${token.token}")
+                        .build()
+
+                    val pollResponse = callFactory.newCall(pollRequest).blockingEnqueue()
+                    if (pollResponse.code() == 202) {
+                        delay(30000) // Wait for 30 seconds before retrying
+                    } else if (pollResponse.isSuccessful) {
+                        playbackUrl = pollResponse.body()?.string()?.toHttpUrlOrNull()
+                        return@runBlocking
+                    }
+                } while (pollResponse.code() == 202)
+            }
+        }
+
+        return playbackUrl
     }
 
     private fun createErrorMessage(e: Throwable): String {
