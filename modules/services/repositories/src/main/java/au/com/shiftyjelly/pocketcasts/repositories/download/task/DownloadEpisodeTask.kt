@@ -65,6 +65,7 @@ import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
 import timber.log.Timber
@@ -575,7 +576,8 @@ class DownloadEpisodeTask @AssistedInject constructor(
         val token: String = urlAndToken.token
 
         val jsonPayload = JSONObject(payload).toString()
-        val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaType(), jsonPayload)
+//        val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaType(), jsonPayload)
+        val requestBody = jsonPayload.toRequestBody("application/json; charset=utf-8".toMediaType())
 
         runBlocking {
 
