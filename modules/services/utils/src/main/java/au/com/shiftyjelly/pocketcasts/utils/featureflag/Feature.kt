@@ -110,7 +110,7 @@ enum class Feature(
     REFERRALS_CLAIM(
         key = "referrals_claim",
         title = "Referrals Claim",
-        defaultValue = BuildConfig.DEBUG,
+        defaultValue = true,
         tier = FeatureTier.Free,
         hasFirebaseRemoteFlag = true,
         hasDevToggle = true,
@@ -118,7 +118,7 @@ enum class Feature(
     REFERRALS_SEND(
         key = "referrals_send",
         title = "Referrals Send",
-        defaultValue = BuildConfig.DEBUG,
+        defaultValue = true,
         tier = FeatureTier.Free,
         hasFirebaseRemoteFlag = true,
         hasDevToggle = true,
@@ -150,6 +150,22 @@ enum class Feature(
     UP_NEXT_SHUFFLE(
         key = "up_next_shuffle",
         title = "Up Next Shuffle",
+        defaultValue = BuildConfig.DEBUG,
+        tier = FeatureTier.Free,
+        hasFirebaseRemoteFlag = false,
+        hasDevToggle = true,
+    ),
+    CUSTOM_PLAYBACK_SETTINGS(
+        key = "custom_playback_settings",
+        title = "Custom playback settings",
+        defaultValue = BuildConfig.DEBUG,
+        tier = FeatureTier.Free,
+        hasFirebaseRemoteFlag = false,
+        hasDevToggle = true,
+    ),
+    MANAGE_DOWNLOADED_EPISODES(
+        key = "manage_downloaded_episodes",
+        title = "Manage Downloaded Episodes",
         defaultValue = BuildConfig.DEBUG,
         tier = FeatureTier.Free,
         hasFirebaseRemoteFlag = false,

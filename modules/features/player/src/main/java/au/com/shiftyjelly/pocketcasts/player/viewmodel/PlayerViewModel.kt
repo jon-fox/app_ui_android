@@ -2,6 +2,7 @@ package au.com.shiftyjelly.pocketcasts.player.viewmodel
 
 import android.content.Context
 import android.content.res.Resources
+import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -28,6 +29,7 @@ import au.com.shiftyjelly.pocketcasts.preferences.model.ArtworkConfiguration
 import au.com.shiftyjelly.pocketcasts.preferences.model.ShelfItem
 import au.com.shiftyjelly.pocketcasts.repositories.bookmark.BookmarkManager
 import au.com.shiftyjelly.pocketcasts.repositories.di.ApplicationScope
+import au.com.shiftyjelly.pocketcasts.repositories.di.IoDispatcher
 import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadHelper
 import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadManager
 import au.com.shiftyjelly.pocketcasts.repositories.playback.PlaybackManager
@@ -63,6 +65,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -90,12 +93,13 @@ class PlayerViewModel @Inject constructor(
     private val episodeAnalytics: EpisodeAnalytics,
     @ApplicationContext private val context: Context,
     @ApplicationScope private val applicationScope: CoroutineScope,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel(), CoroutineScope {
 
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Default
 
-    data class PodcastEffectsPair(val podcast: Podcast, val effects: PlaybackEffects)
+    data class PodcastEffectsData(val podcast: Podcast, val effects: PlaybackEffects, val showCustomEffectsSettings: Boolean = true)
     data class PlayerHeader(
         val positionMs: Int = 0,
         val durationMs: Int = -1,
@@ -262,7 +266,7 @@ class PlayerViewModel @Inject constructor(
 
     val upNextLive: LiveData<List<Any>> = upNextPlusData.toFlowable(BackpressureStrategy.LATEST).toLiveData()
 
-    val effectsObservable: Flowable<PodcastEffectsPair> = playbackStateObservable
+    val effectsObservable: Flowable<PodcastEffectsData> = playbackStateObservable
         .toFlowable(BackpressureStrategy.LATEST)
         .map { it.episodeUuid }
         .switchMap { episodeManager.observeEpisodeByUuidRx(it) }
@@ -273,7 +277,14 @@ class PlayerViewModel @Inject constructor(
                 Flowable.just(Podcast.userPodcast.copy(overrideGlobalEffects = false))
             }
         }
-        .map { PodcastEffectsPair(it, if (it.overrideGlobalEffects) it.playbackEffects else settings.globalPlaybackEffects.value) }
+        .map { podcast ->
+            val isUserPodcast = podcast.uuid == Podcast.userPodcast.uuid
+            PodcastEffectsData(
+                podcast = podcast,
+                effects = if (podcast.overrideGlobalEffects) podcast.playbackEffects else settings.globalPlaybackEffects.value,
+                showCustomEffectsSettings = !isUserPodcast,
+            )
+        }
         .doOnNext { Timber.i("Effects: Podcast: ${it.podcast.overrideGlobalEffects} ${it.effects}") }
         .observeOn(AndroidSchedulers.mainThread())
     val effectsLive = effectsObservable.toLiveData()
@@ -690,6 +701,20 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun onEffectsSettingsSegmentedTabSelected(podcast: Podcast, selectedTab: PlaybackEffectsSettingsTab) {
+        val currentEpisode = playbackManager.getCurrentEpisode()
+        val isCurrentPodcast = currentEpisode?.podcastOrSubstituteUuid == podcast.uuid
+        if (!isCurrentPodcast) return
+        viewModelScope.launch(ioDispatcher) {
+            val override = selectedTab == PlaybackEffectsSettingsTab.ThisPodcast
+            podcastManager.updateOverrideGlobalEffects(podcast, override)
+
+            val effects = if (override) podcast.playbackEffects else settings.globalPlaybackEffects.value
+            podcast.overrideGlobalEffects = override
+            saveEffects(effects, podcast)
+        }
+    }
+
     fun clearPodcastEffects(podcast: Podcast) {
         launch {
             podcastManager.updateOverrideGlobalEffects(podcast, false)
@@ -746,5 +771,10 @@ class PlayerViewModel @Inject constructor(
         private const val episodeUuid = "episode_uuid"
         private const val podcastUuid = "podcast_uuid"
         fun transcriptDismissed(episodeId: String, podcastId: String) = mapOf(episodeId to episodeUuid, podcastId to podcastUuid)
+    }
+
+    enum class PlaybackEffectsSettingsTab(@StringRes val labelResId: Int) {
+        AllPodcasts(LR.string.podcasts_all),
+        ThisPodcast(LR.string.podcast_this),
     }
 }

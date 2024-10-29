@@ -612,6 +612,7 @@
     <string name="podcast_supporter_cancelled">Support cancelled</string>
     <string name="podcast_supporter_manage">Manage</string>
     <string name="podcast_supporter_thanks">Thanks for your support</string>
+    <string name="podcast_this">This podcast</string>
     <string name="podcast_update_queued_failed_summary">Unable to update this feed, please try again later.</string>
     <string name="podcast_update_queued_failed_title">Update Failed</string>
     <string name="podcast_update_queued_success_summary">We\'ve queued an update for this podcast. Our server will re-check it and if it works you should have new episodes soon. Please check back in about an hour.</string>
@@ -2190,5 +2191,11 @@
     <string name="referrals_tooltip_message">Gift %1$s of Pocket&#160;Casts&#160;Plus!</string>
     <string name="referrals_create_subscription_failed">Could not create subscription. Please try again later.</string>
     <string name="referrals_redeem_code_failed">Could not redeem code. Please try again later.</string>
+
+    <!-- Manage Downloaded Episodes -->
+    <string name="pencil_clean_up_icon_content_description">Pencil Clean Up</string>
+    <string name="you_are_running_low_on_storage">You\'re running low on storage</string>
+    <string name="save_space_by_managing_downloaded_episodes">Save %1$s – by managing downloaded episodes.</string>
+    <string name="manage_downloads">Manage Downloads</string>
 
 </resources>
