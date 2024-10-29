@@ -349,6 +349,15 @@ class PodcastAdapter(
             isVisible = podcast.isSubscribed
         }
         with(holder.binding.top.switchJusskipit) {
+            val jusskipitIconText =
+                context.getString(if (podcast.isShowNotifications) LR.string.jusskipit_enabled else LR.string.jusskipit_disabled)
+            contentDescription = jusskipitIconText
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                tooltipText = jusskipitIconText
+            }
+            setThumbResource(
+                if (podcast.isShowNotifications) R.drawable.ic_jusskipit_enabled else R.drawable.ic_jusskipit_disabled,
+            )
             isVisible = podcast.isSubscribed
         }
     }

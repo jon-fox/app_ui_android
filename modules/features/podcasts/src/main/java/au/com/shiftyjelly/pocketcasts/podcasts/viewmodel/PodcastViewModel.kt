@@ -327,6 +327,16 @@ class PodcastViewModel
         }
     }
 
+    fun toggleJusskipit(context: Context) {
+        val podcast = podcast.value ?: return
+        val isJusskipitEnabled = !podcast.isJusskipitEnabled
+        analyticsTracker.track(AnalyticsEvent.PODCAST_SCREEN_JUSSKIPIT_TAPPED, AnalyticsProp.jusskipitEnabled(isJusskipitEnabled))
+        Toast.makeText(context, if (isJusskipitEnabled) LR.string.jusskipit_enabled else LR.string.jusskipit_disabled, Toast.LENGTH_SHORT).show()
+        launch {
+            podcastManager.updateJusskipit(podcast, isJusskipitEnabled)
+        }
+    }
+
     fun shouldShowArchiveAll(): Boolean {
         val episodes = (uiState.value as? UiState.Loaded)?.episodes ?: return false
         return episodes.find { !it.isArchived } != null

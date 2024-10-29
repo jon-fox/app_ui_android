@@ -56,6 +56,8 @@ data class Podcast(
     @ColumnInfo(name = "volume_boosted_modified") var volumeBoostedModified: Date? = null,
     @ColumnInfo(name = "is_folder") var isFolder: Boolean = false,
     @ColumnInfo(name = "subscribed") var isSubscribed: Boolean = false,
+    @ColumnInfo(name = "jusskipit_enabled") var isJusskipitEnabled: Boolean = false,
+    @ColumnInfo(name = "jusskipit_enabled_modified") var isJusskipitEnabledModified: Boolean = false,
     @ColumnInfo(name = "show_notifications") var isShowNotifications: Boolean = false,
     @ColumnInfo(name = "show_notifications_modified") var showNotificationsModified: Date? = null,
     @ColumnInfo(name = "auto_download_status") var autoDownloadStatus: Int = 0,

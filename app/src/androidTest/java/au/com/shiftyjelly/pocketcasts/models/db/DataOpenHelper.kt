@@ -407,8 +407,18 @@ class DataOpenHelper(
         // upgrade to version 45
         if (version == 44) {
             val columnNames = getColumnNames(db, "episode")
-            if (!columnNames.contains("show_notes")) db.execSQL("UPDATE episode SET show_notes = NULL")
+            if (!columnNames.contains("show_notes")) {
+                db.execSQL("ALTER TABLE episode ADD COLUMN show_notes TEXT")
+            }
+            version = 45
         }
+
+        // upgrade to version 46
+        if (version == 45) {
+            val columnNames = getColumnNames(db, "podcast")
+            if (!columnNames.contains("jusskipit_enabled")) db.execSQL("ALTER TABLE podcast ADD COLUMN jusskipit_enabled INTEGER DEFAULT 0")
+        }
+
     }
 
     private fun addDefaultPlaylists(db: SQLiteDatabase) {
@@ -566,6 +576,7 @@ class DataOpenHelper(
             color_last_downloaded INTEGER,
             auto_download_status INTEGER DEFAULT 0,
             show_notifications INTEGER DEFAULT 0,
+            jusskipit_enabled INTEGER DEFAULT 0,
             auto_add_to_up_next INTEGER DEFAULT 0)
             """
 
