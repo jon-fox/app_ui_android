@@ -348,6 +348,9 @@ class PodcastAdapter(
             )
             isVisible = podcast.isSubscribed
         }
+        with(holder.binding.top.switchJusskipit) {
+            isVisible = podcast.isSubscribed
+        }
     }
 
     private fun bindingEpisodeHeaderViewHolder(holder: EpisodeHeaderViewHolder, position: Int) {
