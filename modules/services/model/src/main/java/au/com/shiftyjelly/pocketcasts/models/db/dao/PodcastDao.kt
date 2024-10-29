@@ -237,6 +237,9 @@ abstract class PodcastDao {
     @Query("SELECT COUNT(*) FROM podcasts WHERE subscribed = 1 AND show_notifications = 1")
     abstract fun countNotificationsOn(): Int
 
+    @Query("SELECT COUNT(*) FROM podcasts WHERE subscribed = 1 AND jusskipit_enabled = 1")
+    abstract fun countJusSkipitOn(): Int
+
     @Query("SELECT COUNT(*) FROM podcasts WHERE subscribed = 1 AND auto_download_status = :downloadStatus")
     abstract fun countDownloadStatus(downloadStatus: Int): Int
 
@@ -307,6 +310,9 @@ abstract class PodcastDao {
     @Query("UPDATE podcasts SET show_notifications = :show, show_notifications_modified = :modified, sync_status = 0 WHERE uuid = :uuid")
     abstract fun updateShowNotifications(show: Boolean, uuid: String, modified: Date = Date())
 
+    @Query("UPDATE podcasts SET jusskipit_enabled = :show, jusskipit_enabled_modified = :modified, sync_status = 0 WHERE uuid = :uuid")
+    abstract fun updateJusSkipItEnabled(show: Boolean, uuid: String, modified: Date = Date())
+
     @Query("UPDATE podcasts SET subscribed = :subscribed WHERE uuid = :uuid")
     abstract fun updateSubscribed(subscribed: Boolean, uuid: String)
 
@@ -347,6 +353,9 @@ abstract class PodcastDao {
 
     @Query("UPDATE podcasts SET show_notifications = :showNotifications, show_notifications_modified = :modified, sync_status = 0")
     abstract suspend fun updateAllShowNotifications(showNotifications: Boolean, modified: Date = Date())
+
+    @Query("UPDATE podcasts SET jusskipit_enabled = :jusskipitEnabled, jusskipit_enabled_modified = :modified, sync_status = 0")
+    abstract suspend fun updateJusSkipItEnabled(jusskipitEnabled: Boolean, modified: Date = Date())
 
     @Query("UPDATE podcasts SET auto_download_status = :autoDownloadStatus WHERE uuid = :uuid")
     abstract fun updateAutoDownloadStatus(autoDownloadStatus: Int, uuid: String)

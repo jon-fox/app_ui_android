@@ -558,6 +558,8 @@
     <string name="podcast_notifications">Notifications</string>
     <string name="podcast_notifications_on">Notifications on</string>
     <string name="podcast_notifications_off">Notifications off</string>
+    <string name="jusskipit_enabled">Auto Skip Ads Enabled!</string>
+    <string name="jusskipit_disabled">Auto Skip Ads Disabled</string>
     <string name="podcast_playback_effects">Playback Effects</string>
     <string name="podcast_released_daily">Released daily</string>
     <string name="podcast_released_fortnightly">Released fortnightly</string>
