@@ -330,10 +330,10 @@ class PodcastViewModel
     fun toggleJusskipit(context: Context) {
         val podcast = podcast.value ?: return
         val isJusskipitEnabled = !podcast.isJusskipitEnabled
-        analyticsTracker.track(AnalyticsEvent.PODCAST_SCREEN_JUSSKIPIT_TAPPED, AnalyticsProp.jusskipitEnabled(isJusskipitEnabled))
+//        analyticsTracker.track(AnalyticsEvent.PODCAST_SCREEN_JUSSKIPIT_TAPPED, AnalyticsProp.jusskipitEnabled(isJusskipitEnabled))
         Toast.makeText(context, if (isJusskipitEnabled) LR.string.jusskipit_enabled else LR.string.jusskipit_disabled, Toast.LENGTH_SHORT).show()
         launch {
-            podcastManager.updateJusskipit(podcast, isJusskipitEnabled)
+            podcastManager.updateJusSkipItEnabled(podcast, isJusskipitEnabled)
         }
     }
 
@@ -615,6 +615,8 @@ class PodcastViewModel
         fun archiveToggled(archived: Boolean) =
             mapOf(SHOW_ARCHIVED to archived)
         fun notificationEnabled(show: Boolean) =
+            mapOf(ENABLED_KEY to show)
+        fun jusskipitEnabled(show: Boolean) =
             mapOf(ENABLED_KEY to show)
         fun podcastSubscribeToggled(source: SourceView, uuid: String) =
             mapOf(SOURCE_KEY to source.analyticsValue, UUID_KEY to uuid)

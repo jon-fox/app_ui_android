@@ -133,6 +133,7 @@ class PodcastAdapter(
     private val onBookmarkRowLongPress: (Bookmark) -> Unit,
     private val onFoldersClicked: () -> Unit,
     private val onNotificationsClicked: () -> Unit,
+    private val onJusSkipItClicked: (Switch) -> Unit,
     private val onSettingsClicked: () -> Unit,
     private val playButtonListener: PlayButton.OnClickListener,
     private val onRowClicked: (PodcastEpisode) -> Unit,
@@ -746,6 +747,9 @@ class PodcastAdapter(
             binding.top.notifications.setOnClickListener {
                 adapter.onNotificationsClicked()
             }
+            binding.top.switchJusskipit.setOnClickListener { switch ->
+                adapter.onJusSkipItClicked(switch as Switch)
+            }
             binding.top.settings.setOnClickListener {
                 adapter.onSettingsClicked()
             }
@@ -757,15 +761,7 @@ class PodcastAdapter(
             )
 
             // Find the Switch by its ID
-            val switchJusskipit = binding.root.findViewById<Switch>(R.id.switch_jusskipit)
 
-            // Set a listener for the Switch
-            switchJusskipit.setOnCheckedChangeListener { _, isChecked ->
-                // Handle the switch state change
-                // You can call a method in the adapter to handle the state change
-                adapter.onJusSkipItSwitchChanged(isChecked)
-                downloadManager.setJusSkipIt(isChecked)
-            }
         }
 
         private fun unsubscribe() {

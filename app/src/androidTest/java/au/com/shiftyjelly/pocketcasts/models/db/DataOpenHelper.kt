@@ -416,9 +416,11 @@ class DataOpenHelper(
         // upgrade to version 46
         if (version == 45) {
             val columnNames = getColumnNames(db, "podcast")
-            if (!columnNames.contains("jusskipit_enabled")) db.execSQL("ALTER TABLE podcast ADD COLUMN jusskipit_enabled INTEGER DEFAULT 0")
+            if (!columnNames.contains("jusskipit_enabled")) {
+                db.execSQL("ALTER TABLE podcast ADD COLUMN jusskipit_enabled INTEGER DEFAULT 0")
+            }
+            version = 46
         }
-
     }
 
     private fun addDefaultPlaylists(db: SQLiteDatabase) {
@@ -538,7 +540,8 @@ class DataOpenHelper(
     }
 
     companion object {
-        private const val DATABASE_VERSION = 45
+//        private const val DATABASE_VERSION = 45
+        private const val DATABASE_VERSION = 46
 
         private const val PODCAST_TABLE_CREATE =
             """

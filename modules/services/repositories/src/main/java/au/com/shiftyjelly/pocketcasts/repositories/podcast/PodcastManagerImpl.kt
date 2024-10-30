@@ -631,11 +631,11 @@ class PodcastManagerImpl @Inject constructor(
         podcastDao.updateAllShowNotifications(showNotifications)
     }
 
-    override suspend fun updateJusSkipItEnabled(jusskipitEnabled: Boolean) {
-        if (jusskipitEnabled) {
-            settings.notifyRefreshPodcast.set(true, updateModifiedAt = true)
-        }
-        podcastDao.updateAllShowNotifications(jusskipitEnabled)
+    override suspend fun updateJusSkipItEnabled(podcast: Podcast, jusskipitEnabled: Boolean) {
+//        if (jusskipitEnabled) {
+//            settings.jusSkipItEnabled.set(true, updateModifiedAt = true)
+//        }
+        podcastDao.updateJusSkipItEnabled(jusskipitEnabled)
     }
 
     override fun updateAutoDownloadStatus(podcast: Podcast, autoDownloadStatus: Int) {
