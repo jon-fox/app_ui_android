@@ -77,7 +77,7 @@ interface PodcastManager {
 
     fun updateAllAutoDownloadStatus(autoDownloadStatus: Int)
     suspend fun updateAllShowNotifications(showNotifications: Boolean)
-    suspend fun updateJusSkipItEnabled(jusskipitEnabled: Boolean)
+    suspend fun updateJusSkipItEnabled(podcast: Podcast, jusskipitEnabled: Boolean)
     fun updateAutoDownloadStatus(podcast: Podcast, autoDownloadStatus: Int)
     suspend fun updateAutoAddToUpNext(podcast: Podcast, autoAddToUpNext: Podcast.AutoAddUpNext)
     suspend fun updateAutoAddToUpNexts(podcastUuids: List<String>, autoAddToUpNext: Podcast.AutoAddUpNext)

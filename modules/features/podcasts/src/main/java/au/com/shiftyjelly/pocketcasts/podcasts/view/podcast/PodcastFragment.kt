@@ -1,11 +1,13 @@
 package au.com.shiftyjelly.pocketcasts.podcasts.view.podcast
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.os.BundleCompat
@@ -97,6 +99,7 @@ import au.com.shiftyjelly.pocketcasts.localization.R as LR
 import au.com.shiftyjelly.pocketcasts.ui.R as UR
 import au.com.shiftyjelly.pocketcasts.views.R as VR
 
+@SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
 class PodcastFragment : BaseFragment(), Toolbar.OnMenuItemClickListener {
 
@@ -489,6 +492,12 @@ class PodcastFragment : BaseFragment(), Toolbar.OnMenuItemClickListener {
         }
     }
 
+    private val onJusSkipItClicked: (Switch) -> Unit = {
+        context?.let {
+            viewModel.toggleJusskipit(it)
+        }
+    }
+
     private val onSettingsClicked: () -> Unit = {
         analyticsTracker.track(AnalyticsEvent.PODCAST_SCREEN_SETTINGS_TAPPED)
         (activity as FragmentHostListener).addFragment(PodcastSettingsFragment.newInstance(viewModel.podcastUuid))
@@ -652,6 +661,7 @@ class PodcastFragment : BaseFragment(), Toolbar.OnMenuItemClickListener {
                 onBookmarkRowLongPress = onRowLongPress(),
                 onFoldersClicked = onFoldersClicked,
                 onNotificationsClicked = onNotificationsClicked,
+                onJusSkipItClicked = onJusSkipItClicked,
                 onSettingsClicked = onSettingsClicked,
                 playButtonListener = playButtonListener,
                 onRowClicked = onRowClicked,
