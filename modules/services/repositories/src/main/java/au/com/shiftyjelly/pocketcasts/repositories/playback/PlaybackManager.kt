@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.toLiveData
 import androidx.media3.datasource.HttpDataSource
+import androidx.work.Worker
+import androidx.work.WorkerParameters
 import au.com.shiftyjelly.pocketcasts.analytics.AnalyticsEvent
 import au.com.shiftyjelly.pocketcasts.analytics.AnalyticsTracker
 import au.com.shiftyjelly.pocketcasts.analytics.EpisodeAnalytics
@@ -42,6 +44,7 @@ import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadHelper.remov
 import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadManager
 import au.com.shiftyjelly.pocketcasts.repositories.download.task.DownloadEpisodeTask
 import au.com.shiftyjelly.pocketcasts.repositories.download.task.DownloadEpisodeTask.Companion
+import au.com.shiftyjelly.pocketcasts.repositories.download.task.blockingEnqueue
 import au.com.shiftyjelly.pocketcasts.repositories.file.CloudFilesManager
 import au.com.shiftyjelly.pocketcasts.repositories.notification.NotificationHelper
 import au.com.shiftyjelly.pocketcasts.repositories.playback.LocalPlayer.Companion.VOLUME_DUCK
@@ -68,6 +71,7 @@ import au.com.shiftyjelly.pocketcasts.utils.log.LogBuffer
 import com.automattic.android.tracks.crashlogging.CrashLogging
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.jakewharton.rxrelay2.Relay
+import dagger.assisted.Assisted
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Completable
@@ -93,6 +97,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
@@ -100,6 +105,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.rx2.asFlow
 import kotlinx.coroutines.rx2.asFlowable
 import kotlinx.coroutines.rx2.await
@@ -108,12 +114,18 @@ import kotlinx.coroutines.rx2.rxCompletable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import timber.log.Timber
 import au.com.shiftyjelly.pocketcasts.images.R as IR
 import au.com.shiftyjelly.pocketcasts.localization.R as LR
 
 @Singleton
 open class PlaybackManager @Inject constructor(
+    @Assisted params: WorkerParameters,
     private val settings: Settings,
     private var podcastManager: PodcastManager,
     private var episodeManager: EpisodeManager,
@@ -139,7 +151,7 @@ open class PlaybackManager @Inject constructor(
     private val playbackManagerNetworkWatcherFactory: PlaybackManagerNetworkWatcher.Factory,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val crashLogging: CrashLogging,
-) : FocusManager.FocusChangeListener, AudioNoisyManager.AudioBecomingNoisyListener, CoroutineScope {
+) : FocusManager.FocusChangeListener, AudioNoisyManager.AudioBecomingNoisyListener, CoroutineScope, Worker(context, params) {
 
     companion object {
         private const val UPDATE_EVERY = 5
@@ -1796,6 +1808,10 @@ open class PlaybackManager @Inject constructor(
                     }
                 }
             }
+        }
+
+        if (jusskipit == true) {
+            episode.downloadUrl = getJuskippitUrl(episode.downloadUrl)
         }
 
         LogBuffer.i(LogBuffer.TAG_PLAYBACK, "Opening episode. %s Downloaded: %b Downloading: %b Audio: %b File: %s Uuid: %s", episode.title, episode.isDownloaded, episode.isDownloading, episode.isAudio, episode.downloadUrl ?: "", episode.uuid)
