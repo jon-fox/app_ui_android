@@ -40,6 +40,8 @@ import au.com.shiftyjelly.pocketcasts.repositories.di.ApplicationScope
 import au.com.shiftyjelly.pocketcasts.repositories.di.NotificationPermissionChecker
 import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadHelper.removeEpisodeFromQueue
 import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadManager
+import au.com.shiftyjelly.pocketcasts.repositories.download.task.DownloadEpisodeTask
+import au.com.shiftyjelly.pocketcasts.repositories.download.task.DownloadEpisodeTask.Companion
 import au.com.shiftyjelly.pocketcasts.repositories.file.CloudFilesManager
 import au.com.shiftyjelly.pocketcasts.repositories.notification.NotificationHelper
 import au.com.shiftyjelly.pocketcasts.repositories.playback.LocalPlayer.Companion.VOLUME_DUCK
@@ -152,9 +154,11 @@ open class PlaybackManager @Inject constructor(
         const val SPEED_KEY = "speed"
         const val AMOUNT_KEY = "amount"
         const val ENABLED_KEY = "enabled"
+        const val INPUT_JUSSKIPIT = "jusskipit"
     }
 
     private var notificationPermissionChecker: NotificationPermissionChecker? = null
+    private val jusskipit: Boolean = params.inputData.getBoolean(DownloadEpisodeTask.INPUT_JUSSKIPIT, false)
 
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Default
