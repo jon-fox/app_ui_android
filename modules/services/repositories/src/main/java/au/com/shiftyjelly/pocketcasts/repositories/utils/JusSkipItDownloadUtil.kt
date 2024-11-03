@@ -1,5 +1,6 @@
-package au.com.shiftyjelly.pocketcasts.utils
+package au.com.shiftyjelly.pocketcasts.repositories.utils
 
+import au.com.shiftyjelly.pocketcasts.servers.model.PlaybackUrlAndToken
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import okhttp3.Call
@@ -11,24 +12,24 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import javax.inject.Provider
 
-object DownloadUtils {
+object DownloadUtils
+{
 
     fun getJuskippitUrl(
         downloadUrl: HttpUrl,
-        episode: BaseEpisode,
-        userEpisodeManager: UserEpisodeManager,
+        title: String,
+        urlAndToken: PlaybackUrlAndToken,
         requestBuilderProvider: Provider<Request.Builder>,
         callFactory: Call.Factory
     ): HttpUrl {
 
         val payload = mapOf(
-            "podcast_name" to episode.title,
-            "episode_name" to episode.title,
+            "podcast_name" to title,
+            "episode_name" to title,
             "audio_url" to downloadUrl.toString(),
             "remove_ads" to true
         )
 
-        val urlAndToken = runBlocking { userEpisodeManager.getJusskipitPlaybackUrl().await() }
         var playbackUrl: HttpUrl? = urlAndToken.url.toHttpUrlOrNull()
         val token: String = urlAndToken.token
 
