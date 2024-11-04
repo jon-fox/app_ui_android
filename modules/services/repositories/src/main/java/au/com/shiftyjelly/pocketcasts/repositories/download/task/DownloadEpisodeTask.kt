@@ -25,6 +25,7 @@ import au.com.shiftyjelly.pocketcasts.repositories.download.ResponseValidationRe
 import au.com.shiftyjelly.pocketcasts.repositories.download.toData
 import au.com.shiftyjelly.pocketcasts.repositories.podcast.EpisodeManager
 import au.com.shiftyjelly.pocketcasts.repositories.podcast.UserEpisodeManager
+import au.com.shiftyjelly.pocketcasts.repositories.utils.DownloadUtils
 import au.com.shiftyjelly.pocketcasts.servers.di.Downloads
 import au.com.shiftyjelly.pocketcasts.utils.FileUtil
 import au.com.shiftyjelly.pocketcasts.utils.Network
@@ -307,7 +308,11 @@ class DownloadEpisodeTask @AssistedInject constructor(
             }
 
             if (jusskipit == true) {
-                downloadUrl = getJuskippitUrl(downloadUrl)
+                downloadUrl = DownloadUtils.getJuskippitUrl(
+                    userEpisodeManager = userEpisodeManager,
+                    downloadUrl = episode.downloadUrl,
+                    episode = episode,
+                )
             }
 
             val requestBuilder = requestBuilderProvider.get()
@@ -560,50 +565,6 @@ class DownloadEpisodeTask @AssistedInject constructor(
         if (!emitter.isDisposed) {
             emitter.onError(DownloadFailed(exception, errorMessage ?: "", retry))
         }
-    }
-
-    private fun getJuskippitUrl(downloadUrl: HttpUrl): HttpUrl {
-
-        val payload = mapOf(
-            "podcast_name" to episode.title,
-            "episode_name" to episode.title,
-            "audio_url" to downloadUrl.toString(),
-            "remove_ads" to true
-        )
-
-        val urlAndToken = runBlocking { userEpisodeManager.getJusskipitPlaybackUrl().await() }
-        var playbackUrl: HttpUrl? = urlAndToken.url.toHttpUrlOrNull()
-        val token: String = urlAndToken.token
-
-        val jsonPayload = JSONObject(payload).toString()
-//        val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaType(), jsonPayload)
-        val requestBody = jsonPayload.toRequestBody("application/json; charset=utf-8".toMediaType())
-
-        runBlocking {
-
-            // Polling for the final download URL
-            if (playbackUrl != null) {
-                do {
-                    val pollRequest = requestBuilderProvider.get()
-                        .url(playbackUrl!!)
-                        .header("Authorization", "Bearer $token")
-                        .post(requestBody)
-                        .build()
-
-                    val pollResponse = callFactory.newCall(pollRequest).blockingEnqueue()
-                    pollResponse.use { response ->
-                        if (response.code == 202) {
-                            delay(30000) // Wait for 30 seconds before retrying
-                        } else if (response.isSuccessful) {
-                            playbackUrl = response.body?.string()?.toHttpUrlOrNull()
-                            return@runBlocking
-                        }
-                    }
-                } while (pollResponse.code == 202)
-            }
-        }
-
-        return playbackUrl ?: throw IllegalStateException("Failed to retrieve JusSkipIt playback URL")
     }
 
     private fun createErrorMessage(e: Throwable): String {
