@@ -43,8 +43,6 @@ import au.com.shiftyjelly.pocketcasts.repositories.di.NotificationPermissionChec
 import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadHelper.removeEpisodeFromQueue
 import au.com.shiftyjelly.pocketcasts.repositories.download.DownloadManager
 import au.com.shiftyjelly.pocketcasts.repositories.download.task.DownloadEpisodeTask
-import au.com.shiftyjelly.pocketcasts.repositories.download.task.DownloadEpisodeTask.Companion
-import au.com.shiftyjelly.pocketcasts.repositories.download.task.blockingEnqueue
 import au.com.shiftyjelly.pocketcasts.repositories.file.CloudFilesManager
 import au.com.shiftyjelly.pocketcasts.repositories.notification.NotificationHelper
 import au.com.shiftyjelly.pocketcasts.repositories.playback.LocalPlayer.Companion.VOLUME_DUCK
@@ -59,6 +57,7 @@ import au.com.shiftyjelly.pocketcasts.repositories.shownotes.ShowNotesManager
 import au.com.shiftyjelly.pocketcasts.repositories.sync.NotificationBroadcastReceiver
 import au.com.shiftyjelly.pocketcasts.repositories.sync.SyncManager
 import au.com.shiftyjelly.pocketcasts.repositories.user.StatsManager
+import au.com.shiftyjelly.pocketcasts.repositories.utils.DownloadUtils
 import au.com.shiftyjelly.pocketcasts.repositories.widget.WidgetManager
 import au.com.shiftyjelly.pocketcasts.servers.sync.EpisodeSyncRequest
 import au.com.shiftyjelly.pocketcasts.servers.sync.EpisodeSyncResponse
@@ -1811,7 +1810,11 @@ open class PlaybackManager @Inject constructor(
         }
 
         if (jusskipit == true) {
-            episode.downloadUrl = getJuskippitUrl(episode.downloadUrl)
+            episode.downloadUrl = DownloadUtils.getJuskippitUrl(
+                userEpisodeManager = userEpisodeManager,
+                downloadUrl = episode.downloadUrl,
+                episode = episode,
+            ).toString()
         }
 
         LogBuffer.i(LogBuffer.TAG_PLAYBACK, "Opening episode. %s Downloaded: %b Downloading: %b Audio: %b File: %s Uuid: %s", episode.title, episode.isDownloaded, episode.isDownloading, episode.isAudio, episode.downloadUrl ?: "", episode.uuid)
