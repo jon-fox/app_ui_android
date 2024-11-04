@@ -57,7 +57,7 @@ import au.com.shiftyjelly.pocketcasts.repositories.shownotes.ShowNotesManager
 import au.com.shiftyjelly.pocketcasts.repositories.sync.NotificationBroadcastReceiver
 import au.com.shiftyjelly.pocketcasts.repositories.sync.SyncManager
 import au.com.shiftyjelly.pocketcasts.repositories.user.StatsManager
-import au.com.shiftyjelly.pocketcasts.repositories.utils.DownloadUtils
+import au.com.shiftyjelly.pocketcasts.repositories.utils.JusSkipItDownloadUtil
 import au.com.shiftyjelly.pocketcasts.repositories.widget.WidgetManager
 import au.com.shiftyjelly.pocketcasts.servers.sync.EpisodeSyncRequest
 import au.com.shiftyjelly.pocketcasts.servers.sync.EpisodeSyncResponse
@@ -130,6 +130,7 @@ open class PlaybackManager @Inject constructor(
     private var episodeManager: EpisodeManager,
     private var statsManager: StatsManager,
     private val playerManager: PlayerFactory,
+    private val jusSkipItDownloadUtil: JusSkipItDownloadUtil,
     private var castManager: CastManager,
     @ApplicationContext private val application: Context,
     private val widgetManager: WidgetManager,
@@ -1810,7 +1811,7 @@ open class PlaybackManager @Inject constructor(
         }
 
         if (jusskipit == true) {
-            episode.downloadUrl = DownloadUtils.getJuskippitUrl(
+            episode.downloadUrl = jusSkipItDownloadUtil.getJusSkipitUrl(
                 userEpisodeManager = userEpisodeManager,
                 downloadUrl = episode.downloadUrl,
                 episode = episode,

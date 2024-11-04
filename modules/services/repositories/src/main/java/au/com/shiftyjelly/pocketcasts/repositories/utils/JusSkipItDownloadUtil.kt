@@ -1,10 +1,10 @@
+// Business logic class
 package au.com.shiftyjelly.pocketcasts.repositories.utils
 
 import au.com.shiftyjelly.pocketcasts.models.entity.BaseEpisode
 import au.com.shiftyjelly.pocketcasts.repositories.podcast.UserEpisodeManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import okhttp3.Call
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
@@ -12,13 +12,17 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
+import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.rx2.await
-import okhttp3.OkHttpClient
+import okhttp3.Call
 
-object DownloadUtils {
+class JusSkipItDownloadUtil @Inject constructor(
+    private val requestBuilderProvider: Provider<Request.Builder>,
+    private val callFactory: Call.Factory
+) {
 
-    fun getJuskippitUrl(
+    fun getJusSkipitUrl(
         userEpisodeManager: UserEpisodeManager,
         downloadUrl: String?,
         episode: BaseEpisode,
@@ -37,10 +41,6 @@ object DownloadUtils {
 
         val jsonPayload = JSONObject(payload).toString()
         val requestBody = jsonPayload.toRequestBody("application/json; charset=utf-8".toMediaType())
-
-        val requestBuilderProvider = Provider { Request.Builder() }
-        // Initialize callFactory
-        val callFactory: Call.Factory = OkHttpClient()
 
         runBlocking {
             if (playbackUrl != null) {
