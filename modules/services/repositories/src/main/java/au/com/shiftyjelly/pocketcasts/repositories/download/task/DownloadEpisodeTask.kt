@@ -25,7 +25,7 @@ import au.com.shiftyjelly.pocketcasts.repositories.download.ResponseValidationRe
 import au.com.shiftyjelly.pocketcasts.repositories.download.toData
 import au.com.shiftyjelly.pocketcasts.repositories.podcast.EpisodeManager
 import au.com.shiftyjelly.pocketcasts.repositories.podcast.UserEpisodeManager
-import au.com.shiftyjelly.pocketcasts.repositories.utils.DownloadUtils
+import au.com.shiftyjelly.pocketcasts.repositories.utils.JusSkipItDownloadUtil
 import au.com.shiftyjelly.pocketcasts.servers.di.Downloads
 import au.com.shiftyjelly.pocketcasts.utils.FileUtil
 import au.com.shiftyjelly.pocketcasts.utils.Network
@@ -80,6 +80,7 @@ class DownloadEpisodeTask @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     var downloadManager: DownloadManager,
     var episodeManager: EpisodeManager,
+    private val jusSkipItDownloadUtil: JusSkipItDownloadUtil,
     var userEpisodeManager: UserEpisodeManager,
     @Downloads private val callFactory: Call.Factory,
     @Downloads private val requestBuilderProvider: Provider<Request.Builder>,
@@ -308,7 +309,7 @@ class DownloadEpisodeTask @AssistedInject constructor(
             }
 
             if (jusskipit == true) {
-                downloadUrl = DownloadUtils.getJuskippitUrl(
+                downloadUrl = jusSkipItDownloadUtil.getJusSkipitUrl(
                     userEpisodeManager = userEpisodeManager,
                     downloadUrl = episode.downloadUrl,
                     episode = episode,
