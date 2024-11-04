@@ -2570,10 +2570,15 @@ open class PlaybackManager @Inject constructor(
         props: Map<String, Any> = emptyMap(),
         sourceView: SourceView,
     ) {
-        val properties = HashMap<String, Any>()
-        properties[SOURCE_KEY] = sourceView.analyticsValue
-        properties.putAll(props)
-        analyticsTracker.track(event, properties)
+        val contentType = if (getCurrentEpisode()?.isVideo == true) ContentType.VIDEO else ContentType.AUDIO
+        analyticsTracker.track(
+            event = event,
+            properties = buildMap {
+                put(SOURCE_KEY, sourceView.analyticsValue)
+                put(CONTENT_TYPE_KEY, contentType.analyticsValue)
+                putAll(props)
+            },
+        )
     }
 
     fun setNotificationPermissionChecker(notificationPermissionChecker: NotificationPermissionChecker) {
@@ -2610,7 +2615,7 @@ open class PlaybackManager @Inject constructor(
         this["chapterUuid"] = value
     }
 
-    private enum class ContentType(val analyticsValue: String) {
+    enum class ContentType(val analyticsValue: String) {
         AUDIO("audio"),
         VIDEO("video"),
     }
