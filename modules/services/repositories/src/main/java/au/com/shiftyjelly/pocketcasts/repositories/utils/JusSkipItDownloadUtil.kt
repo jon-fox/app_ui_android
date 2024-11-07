@@ -12,15 +12,11 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
-import javax.inject.Inject
-import javax.inject.Provider
-import kotlinx.coroutines.rx2.await
-import okhttp3.Call
 
-class JusSkipItDownloadUtil @Inject constructor(
-    private val requestBuilderProvider: Provider<Request.Builder>,
-    private val callFactory: Call.Factory
-) {
+import kotlinx.coroutines.rx2.await
+import okhttp3.OkHttpClient
+
+class JusSkipItDownloadUtil {
 
     fun getJusSkipitUrl(
         userEpisodeManager: UserEpisodeManager,
@@ -42,10 +38,13 @@ class JusSkipItDownloadUtil @Inject constructor(
         val jsonPayload = JSONObject(payload).toString()
         val requestBody = jsonPayload.toRequestBody("application/json; charset=utf-8".toMediaType())
 
+        val requestBuilderProvider = { Request.Builder() }
+        val callFactory = OkHttpClient()
+
         runBlocking {
             if (playbackUrl != null) {
                 do {
-                    val pollRequest = requestBuilderProvider.get()
+                    val pollRequest = requestBuilderProvider()
                         .url(playbackUrl!!)
                         .header("Authorization", "Bearer $token")
                         .post(requestBody)

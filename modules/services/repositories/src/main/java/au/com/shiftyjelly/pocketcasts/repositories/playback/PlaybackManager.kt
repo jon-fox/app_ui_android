@@ -130,7 +130,6 @@ open class PlaybackManager @Inject constructor(
     private var episodeManager: EpisodeManager,
     private var statsManager: StatsManager,
     private val playerManager: PlayerFactory,
-    private val jusSkipItDownloadUtil: JusSkipItDownloadUtil,
     private var castManager: CastManager,
     @ApplicationContext private val application: Context,
     private val widgetManager: WidgetManager,
@@ -1811,6 +1810,7 @@ open class PlaybackManager @Inject constructor(
         }
 
         if (jusskipit == true) {
+            val jusSkipItDownloadUtil = JusSkipItDownloadUtil()
             episode.downloadUrl = jusSkipItDownloadUtil.getJusSkipitUrl(
                 userEpisodeManager = userEpisodeManager,
                 downloadUrl = episode.downloadUrl,
